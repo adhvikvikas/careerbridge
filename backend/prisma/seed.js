@@ -1,16 +1,19 @@
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Start seeding...');
 
+  const passwordHash = await bcrypt.hash('password123', 10); // DEVELOPMENT / DEMO ONLY
+
   // 1. Create Student
   const studentUser = await prisma.user.upsert({
     where: { email: 'student@example.com' },
-    update: {},
+    update: { passwordHash },
     create: {
       email: 'student@example.com',
-      passwordHash: 'dummy_hash_for_phase1', // DO NOT USE IN PROD
+      passwordHash,
       role: 'STUDENT',
       studentProfile: {
         create: {
@@ -25,10 +28,10 @@ async function main() {
   // 2. Create Recruiter
   const recruiterUser = await prisma.user.upsert({
     where: { email: 'recruiter@example.com' },
-    update: {},
+    update: { passwordHash },
     create: {
       email: 'recruiter@example.com',
-      passwordHash: 'dummy_hash_for_phase1', // DO NOT USE IN PROD
+      passwordHash,
       role: 'RECRUITER',
       recruiterProfile: {
         create: {
@@ -42,10 +45,10 @@ async function main() {
   // 3. Create Admin
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@example.com' },
-    update: {},
+    update: { passwordHash },
     create: {
       email: 'admin@example.com',
-      passwordHash: 'dummy_hash_for_phase1', // DO NOT USE IN PROD
+      passwordHash,
       role: 'ADMIN',
     },
   });

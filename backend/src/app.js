@@ -6,6 +6,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Routes
+const authRoutes = require('./routes/auth.routes');
+const studentRoutes = require('./routes/student.routes');
+const recruiterRoutes = require('./routes/recruiter.routes');
+const adminRoutes = require('./routes/admin.routes');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/student', studentRoutes);
+app.use('/api/recruiter', recruiterRoutes);
+app.use('/api/admin', adminRoutes);
+
 // Health route
 app.get('/api/health', (req, res) => {
   res.json({
