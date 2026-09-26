@@ -8,7 +8,7 @@ CareerBridge is a professional three-role campus recruitment platform connecting
 
 ## 2. Core User Roles
 
-- **Student:** Can discover approved opportunities, maintain an academic profile, and apply to eligible jobs.
+- **Student:** Can discover approved opport§unities, maintain an academic profile, and apply to eligible jobs.
 - **Recruiter:** Can manage company profiles, publish job postings (with eligibility criteria), and review/progress applicants.
 - **Placement Admin:** Oversees the institutional workflow by approving/rejecting companies and jobs, and maintains an auditable approval history.
 

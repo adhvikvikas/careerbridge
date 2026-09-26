@@ -1,8 +1,12 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/auth/Login';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminCompanies from './pages/admin/AdminCompanies';
+import AdminJobs from './pages/admin/AdminJobs';
+import AdminAuditLogs from './pages/admin/AdminAuditLogs';
 
 const Home = () => {
   const { user } = useAuth();
@@ -87,11 +91,11 @@ function AppRoutes() {
       <Route path="/admin/*" element={
         <ProtectedRoute allowedRoles={['ADMIN']}>
           <Routes>
-            <Route path="" element={<Placeholder title="Admin Portal" />} />
-            <Route path="dashboard" element={<Placeholder title="Admin Dashboard" />} />
-            <Route path="companies" element={<Placeholder title="Manage Companies" />} />
-            <Route path="jobs" element={<Placeholder title="Manage Jobs" />} />
-            <Route path="audit-logs" element={<Placeholder title="Audit Logs" />} />
+            <Route path="" element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="companies" element={<AdminCompanies />} />
+            <Route path="jobs" element={<AdminJobs />} />
+            <Route path="audit-logs" element={<AdminAuditLogs />} />
           </Routes>
         </ProtectedRoute>
       } />

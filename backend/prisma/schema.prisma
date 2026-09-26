@@ -49,98 +49,104 @@ model User {
 }
 
 model StudentProfile {
-  id             String   @id @default(uuid())
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id])
+  id             String  @id @default(uuid())
+  userId         String  @unique
+  user           User    @relation(fields: [userId], references: [id])
   branch         String?
   cgpa           Float?
   graduationYear Int?
   resumeUrl      String?
-  backlogs       Int      @default(0)
+  backlogs       Int     @default(0)
 
-  applications   Application[]
-  savedJobs      SavedJob[]
+  applications Application[]
+  savedJobs    SavedJob[]
 }
 
 model RecruiterProfile {
-  id       String   @id @default(uuid())
-  userId   String   @unique
-  user     User     @relation(fields: [userId], references: [id])
-  name     String
-  phone    String?
+  id     String  @id @default(uuid())
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id])
+  name   String
+  phone  String?
 
   companies Company[]
 }
 
 model Company {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  website     String?
-  industry    String?
-  location    String?
-  status      ApprovalStatus @default(PENDING)
-  recruiterId String
-  recruiter   RecruiterProfile @relation(fields: [recruiterId], references: [id])
+  id              String           @id @default(uuid())
+  name            String
+  description     String?
+  website         String?
+  industry        String?
+  location        String?
+  status          ApprovalStatus   @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  recruiterId     String
+  recruiter       RecruiterProfile @relation(fields: [recruiterId], references: [id])
 
   jobs JobPosting[]
 }
 
 model JobPosting {
-  id               String   @id @default(uuid())
-  title            String
-  description      String
-  minCgpa          Float?
-  departments      String[]
-  graduationYears  Int[]
-  deadline         DateTime
-  openings         Int?
-  status           ApprovalStatus @default(PENDING)
-  
-  companyId        String
-  company          Company  @relation(fields: [companyId], references: [id])
-  
-  applications     Application[]
-  savedBy          SavedJob[]
+  id              String         @id @default(uuid())
+  title           String
+  description     String
+  minCgpa         Float?
+  departments     String[]
+  graduationYears Int[]
+  deadline        DateTime
+  openings        Int?
+  status          ApprovalStatus @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  applications Application[]
+  savedBy      SavedJob[]
 }
 
 model Application {
-  id        String   @id @default(uuid())
+  id        String            @id @default(uuid())
   studentId String
   jobId     String
   status    ApplicationStatus @default(APPLIED)
-  appliedAt DateTime @default(now())
+  appliedAt DateTime          @default(now())
 
-  student   StudentProfile @relation(fields: [studentId], references: [id])
-  job       JobPosting     @relation(fields: [jobId], references: [id])
-  
+  student StudentProfile @relation(fields: [studentId], references: [id])
+  job     JobPosting     @relation(fields: [jobId], references: [id])
+
   statusHistory ApplicationStatusHistory[]
 
   @@unique([studentId, jobId])
 }
 
 model ApplicationStatusHistory {
-  id             String   @id @default(uuid())
-  applicationId  String
-  oldStatus      ApplicationStatus?
-  newStatus      ApplicationStatus
-  changedBy      String
-  changedAt      DateTime @default(now())
-  note           String?
+  id            String             @id @default(uuid())
+  applicationId String
+  oldStatus     ApplicationStatus?
+  newStatus     ApplicationStatus
+  changedBy     String
+  changedAt     DateTime           @default(now())
+  note          String?
 
-  application    Application @relation(fields: [applicationId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
 }
 
 model Notification {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
   type      String
   title     String
   message   String
   readAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
-  user      User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 model AdminActionLog {
@@ -152,17 +158,17 @@ model AdminActionLog {
   reason     String?
   createdAt  DateTime @default(now())
 
-  admin      User     @relation("AdminLogs", fields: [adminId], references: [id])
+  admin User @relation("AdminLogs", fields: [adminId], references: [id])
 }
 
 model SavedJob {
-  id         String   @id @default(uuid())
-  studentId  String
-  jobId      String
-  createdAt  DateTime @default(now())
+  id        String   @id @default(uuid())
+  studentId String
+  jobId     String
+  createdAt DateTime @default(now())
 
-  student    StudentProfile @relation(fields: [studentId], references: [id])
-  job        JobPosting     @relation(fields: [jobId], references: [id])
+  student StudentProfile @relation(fields: [studentId], references: [id])
+  job     JobPosting     @relation(fields: [jobId], references: [id])
 
   @@unique([studentId, jobId])
 }
