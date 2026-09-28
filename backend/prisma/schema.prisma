@@ -111,11 +111,12 @@ model JobPosting {
 }
 
 model Application {
-  id        String            @id @default(uuid())
-  studentId String
-  jobId     String
-  status    ApplicationStatus @default(APPLIED)
-  appliedAt DateTime          @default(now())
+  id             String            @id @default(uuid())
+  studentId      String
+  jobId          String
+  status         ApplicationStatus @default(APPLIED)
+  appliedAt      DateTime          @default(now())
+  recruiterNotes String?
 
   student StudentProfile @relation(fields: [studentId], references: [id])
   job     JobPosting     @relation(fields: [jobId], references: [id])

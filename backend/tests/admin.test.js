@@ -27,6 +27,8 @@ describe('Admin Governance API', () => {
 
     // Reset database state for tests
     await prisma.adminActionLog.deleteMany({});
+    await prisma.applicationStatusHistory.deleteMany({});
+    await prisma.application.deleteMany({});
     await prisma.jobPosting.deleteMany({});
     await prisma.company.deleteMany({});
 
