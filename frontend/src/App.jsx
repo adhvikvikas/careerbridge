@@ -7,6 +7,20 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCompanies from './pages/admin/AdminCompanies';
 import AdminJobs from './pages/admin/AdminJobs';
 import AdminAuditLogs from './pages/admin/AdminAuditLogs';
+import StudentDashboard from './pages/student/StudentDashboard';
+import StudentProfile from './pages/student/StudentProfile';
+import StudentJobs from './pages/student/StudentJobs';
+import StudentJobDetails from './pages/student/StudentJobDetails';
+import StudentApplications from './pages/student/StudentApplications';
+import StudentApplicationDetails from './pages/student/StudentApplicationDetails';
+import StudentSavedJobs from './pages/student/StudentSavedJobs';
+import StudentNotifications from './pages/student/StudentNotifications';
+import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
+import RecruiterProfile from './pages/recruiter/RecruiterProfile';
+import RecruiterJobs from './pages/recruiter/RecruiterJobs';
+import RecruiterJobForm from './pages/recruiter/RecruiterJobForm';
+import RecruiterApplications from './pages/recruiter/RecruiterApplications';
+import RecruiterApplicationDetails from './pages/recruiter/RecruiterApplicationDetails';
 
 const Home = () => {
   const { user } = useAuth();
@@ -65,11 +79,15 @@ function AppRoutes() {
       <Route path="/student/*" element={
         <ProtectedRoute allowedRoles={['STUDENT']}>
           <Routes>
-            <Route path="" element={<Placeholder title="Student Portal" />} />
-            <Route path="dashboard" element={<Placeholder title="Student Dashboard" />} />
-            <Route path="jobs" element={<Placeholder title="Discover Jobs" />} />
-            <Route path="applications" element={<Placeholder title="My Applications" />} />
-            <Route path="profile" element={<Placeholder title="My Profile" />} />
+            <Route path="" element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<StudentDashboard />} />
+            <Route path="jobs" element={<StudentJobs />} />
+            <Route path="jobs/:id" element={<StudentJobDetails />} />
+            <Route path="applications" element={<StudentApplications />} />
+            <Route path="applications/:id" element={<StudentApplicationDetails />} />
+            <Route path="saved-jobs" element={<StudentSavedJobs />} />
+            <Route path="notifications" element={<StudentNotifications />} />
+            <Route path="profile" element={<StudentProfile />} />
           </Routes>
         </ProtectedRoute>
       } />
@@ -78,11 +96,14 @@ function AppRoutes() {
       <Route path="/recruiter/*" element={
         <ProtectedRoute allowedRoles={['RECRUITER']}>
           <Routes>
-            <Route path="" element={<Placeholder title="Recruiter Portal" />} />
-            <Route path="dashboard" element={<Placeholder title="Recruiter Dashboard" />} />
-            <Route path="company" element={<Placeholder title="Company Profile" />} />
-            <Route path="jobs" element={<Placeholder title="Manage Jobs" />} />
-            <Route path="applicants" element={<Placeholder title="Review Applicants" />} />
+            <Route path="" element={<RecruiterDashboard />} />
+            <Route path="dashboard" element={<RecruiterDashboard />} />
+            <Route path="profile" element={<RecruiterProfile />} />
+            <Route path="jobs" element={<RecruiterJobs />} />
+            <Route path="jobs/new" element={<RecruiterJobForm />} />
+            <Route path="jobs/:id/edit" element={<RecruiterJobForm />} />
+            <Route path="jobs/:id/applications" element={<RecruiterApplications />} />
+            <Route path="applications/:id" element={<RecruiterApplicationDetails />} />
           </Routes>
         </ProtectedRoute>
       } />
