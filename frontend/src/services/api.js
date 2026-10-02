@@ -33,3 +33,22 @@ export const login = (email, password) => {
 export const getMe = () => {
   return api('/auth/me');
 };
+
+export default {
+  get: async (url) => {
+    const data = await api(url);
+    return { data };
+  },
+  post: async (url, body) => {
+    const data = await api(url, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
+    return { data };
+  },
+  patch: async (url, body) => {
+    const data = await api(url, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined });
+    return { data };
+  },
+  delete: async (url) => {
+    const data = await api(url, { method: 'DELETE' });
+    return { data };
+  }
+};
