@@ -2,96 +2,175 @@
 
 Institutional Recruitment & Placement Management Platform
 
-## 1. Project Overview
+## Overview
 
 CareerBridge is a professional three-role campus recruitment platform connecting Student Applicants, Company Recruiters, and Placement Cell Administrators. It centralizes and digitizes the institutional placement workflow, replacing fragmented notices and manual approvals with a controlled, audit-friendly digital environment.
 
-## 2. Core User Roles
+## Core Roles
 
-- **Student:** Can discover approved opport§unities, maintain an academic profile, and apply to eligible jobs.
-- **Recruiter:** Can manage company profiles, publish job postings (with eligibility criteria), and review/progress applicants.
-- **Placement Admin:** Oversees the institutional workflow by approving/rejecting companies and jobs, and maintains an auditable approval history.
+- **Student:** Can discover approved opportunities, maintain an academic profile, check their eligibility programmatically, and apply to jobs seamlessly.
+- **Recruiter:** Can manage company profiles, publish job postings (with strict eligibility criteria), and review/progress applicants through various recruitment stages.
+- **Placement Admin:** Oversees the institutional workflow by approving/rejecting companies and jobs, providing governance, and maintaining an auditable action history.
 
-## 3. Planned Technology Stack
+## Key Features
 
-- **Frontend:** React, Vite, Tailwind CSS, React Router
-- **Backend:** Node.js, Express
-- **Database / ORM:** PostgreSQL, Prisma
-- **Auth (Future Phase):** JWT, bcrypt
-- **Validation (Future Phase):** Zod
+- **Role-Based Access Control (RBAC):** Strict security boundaries isolating Students, Recruiters, and Admins.
+- **Server-Side Eligibility Engine:** Programmatically calculates and enforces job requirements (CGPA, Branches, Graduation Year, Deadlines) on the backend.
+- **Governance Workflow:** Admin approval is required for all new companies and job postings before they go live to students.
+- **Application Tracking:** Students can track their application statuses (Under Review, Shortlisted, Selected, Rejected) as recruiters update them.
+- **Audit Logging:** All critical admin governance actions are logged for institutional transparency.
+- **Duplicate Application Prevention:** Robust constraints prevent students from submitting multiple applications to the same job.
 
-## 4. Project Structure
+## Technology Stack
 
-The project is structured as a monorepo containing two main parts:
+Frontend:
+- React
+- Vite
+- Tailwind CSS
+- React Router
+- lucide-react (Icons)
 
-- `frontend/`: The React SPA (Single Page Application)
-- `backend/`: The Express REST API
-- `docs/`: Project documentation (to be expanded)
+Backend:
+- Node.js
+- Express
 
-## 5. Current Development Phase
+Database:
+- PostgreSQL
+- Prisma (ORM)
 
-**Currently in PHASE 1 - PROJECT FOUNDATION.** 
-*Note: Advanced features like Authentication, Role-Based Access Control, Eligibility Engine, and Application Tracking have NOT been implemented yet.*
+Authentication:
+- JWT (JSON Web Tokens)
+- bcrypt (Password Hashing)
 
-## 6. Local Development Prerequisites
+Validation:
+- Zod
 
+Testing:
+- Vitest
+- Supertest
+
+## Architecture
+
+The system operates on a decoupled client-server architecture:
+
+React (SPA)
+↓
+Express API (RESTful endpoints)
+↓
+Authentication/RBAC Middleware
+↓
+Controllers/Services/Validation
+↓
+Prisma ORM
+↓
+PostgreSQL
+
+## Project Structure
+
+- `frontend/`: The React Single Page Application (Vite-based).
+  - `src/pages/`: Contains role-specific directories (`admin`, `recruiter`, `student`, `auth`).
+  - `src/components/`: Shared UI components and Role-based Layouts.
+  - `src/services/`: API configuration and networking.
+- `backend/`: The Express Node.js Server.
+  - `src/controllers/`: Route handlers per module.
+  - `src/routes/`: Express router definitions.
+  - `src/validators/`: Zod validation schemas.
+  - `src/middleware/`: Auth and Error handling logic.
+  - `prisma/`: Database schema and migrations.
+  - `tests/`: Extensive API test suites.
+
+## User Workflows
+
+**Student:**
+Register/login → Profile → Browse Jobs → Eligibility → Apply → Track Application
+
+**Recruiter:**
+Login → Company/Profile → Create Job → Admin Approval → Manage Applicants → Update Status
+
+**Admin:**
+Login → Dashboard → Approve Companies → Approve Jobs → Audit Actions
+
+## Installation
+
+### Prerequisites
 - Node.js (v18+ recommended)
 - PostgreSQL (running locally)
 - Git
 
-## 7. Basic Setup
-
-1. **Clone the repository.**
-2. **Setup Frontend:**
-   ```bash
-   cd frontend
-   npm install
-   ```
-3. **Setup Backend:**
-   ```bash
-   cd backend
-   npm install
-   ```
-4. **Database Configuration:**
-   Copy `backend/.env.example` to `backend/.env` and update `DATABASE_URL` with your local PostgreSQL connection string.
-   ```bash
-   cd backend
-   npx prisma migrate dev --name init
-   npx prisma db seed
-   ```
-
-## 8. Running the Frontend
-
-From the `frontend/` directory:
+### 1. Clone the repository
 ```bash
+git clone <repository_url>
+cd careerbridge
+```
+
+### 2. Setup Backend & Database
+```bash
+cd backend
+npm install
+```
+
+Copy the environment variables template and configure your local PostgreSQL connection string:
+```bash
+cp .env.example .env
+```
+Update `DATABASE_URL` inside `.env`.
+
+Initialize the database schema and seed default users:
+```bash
+npx prisma migrate dev
+npx prisma db seed
+```
+
+### 3. Setup Frontend
+In a new terminal window:
+```bash
+cd frontend
+npm install
+```
+
+### 4. Running the Application
+Start the backend API (runs on port 5000):
+```bash
+cd backend
 npm run dev
 ```
 
-## 9. Running the Backend
-
-From the `backend/` directory:
+Start the frontend Vite server (runs on port 5173):
 ```bash
+cd frontend
 npm run dev
 ```
 
-## 10. API Health Check
+## Testing
 
-When the backend is running, verify it by visiting:
-`GET http://localhost:5000/api/health`
-
-It should return:
-```json
-{
-  "success": true,
-  "message": "CareerBridge API is running"
-}
+Run the full backend regression suite sequentially:
+```bash
+cd backend
+npx vitest run tests/auth.test.js && npx vitest run tests/admin.test.js && npx vitest run tests/recruiter.test.js && npx vitest run tests/student.test.js
 ```
 
-## 11. Development Roadmap
+Build the frontend for production:
+```bash
+cd frontend
+npm run build
+```
 
-- **Phase 1: Foundation (Complete)**
-- Phase 2: Authentication & RBAC
-- Phase 3: Admin Governance
-- Phase 4: Recruiter Portal
-- Phase 5: Student Portal
-- Phase 6: Polish & Submission
+## Security
+
+- **JWT & bcrypt:** Passwords are never stored in plaintext. JWTs are used for stateless session management.
+- **RBAC:** Middleware validates the active role attached to the JWT, rejecting unauthorized access with HTTP 403.
+- **Ownership Checks (IDOR Prevention):** Lookups for jobs, profiles, and applications are tightly tethered to the authenticated `user.id` on the backend, preventing data traversal.
+- **Server-Side Eligibility:** Eligibility validation happens strictly on the server-side before persisting an application, regardless of UI manipulation.
+- **Duplicate Constraints:** Database-level `@@unique` composite constraints physically prevent multiple applications.
+
+## Current Scope
+
+This submission encapsulates Phase 6 (Final Polish & Submission) of the CareerBridge roadmap. All core flows—Foundation, Auth/RBAC, Admin Governance, Recruiter Portal, and Student Portal—are fully implemented, functionally integrated, styled, and extensively tested.
+
+## Future Enhancements
+
+- Interview scheduling integrations
+- Richer analytics and exportable reporting
+- Actual resume file storage (AWS S3 / Cloudinary integration)
+- Production Deployment (Dockerization / Vercel / Railway)
+- Advanced notifications (Email integration via SendGrid/AWS SES)
