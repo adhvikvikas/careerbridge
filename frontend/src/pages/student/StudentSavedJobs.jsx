@@ -1,94 +1,111 @@
 import React, { useEffect, useState } from 'react';
+import { api } from '../../services/api';
+import { Button } from '../../components/ui/Button';
+import { LoadingState, ErrorState, EmptyState } from '../../components/ui/States';
 import { Link } from 'react-router-dom';
-import StudentLayout from '../../components/StudentLayout';
-import api from '../../services/api';
-import { Bookmark, Building, MapPin, Calendar, Trash2 } from 'lucide-react';
+import { Bookmark, MapPin, BriefcaseBusiness, IndianRupee } from 'lucide-react';
 
-const StudentSavedJobs = () => {
+export default function StudentSavedJobs() {
   const [savedJobs, setSavedJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const fetchSavedJobs = async () => {
-    try {
-      const res = await api.get('/student/saved-jobs');
-      setSavedJobs(res.data.savedJobs);
-    } catch (err) {
-      console.error('Failed to load saved jobs', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchSavedJobs();
   }, []);
 
-  const handleUnsave = async (jobId) => {
+  const fetchSavedJobs = async () => {
     try {
-      await api.delete(`/student/jobs/${jobId}/save`);
-      fetchSavedJobs();
+      const response = await api.get('/student/saved-jobs');
+      setSavedJobs(response.data.savedJobs);
+      setError(null);
     } catch (err) {
-      alert('Failed to unsave job');
+      setError('Failed to load bookmarked opportunities.');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const removeSavedJob = async (id) => {
+    try {
+      await api.delete(`/student/saved-jobs/${id}`);
+      fetchSavedJobs();
+    } catch (err) {
+      alert('Failed to remove bookmark.');
+    }
+  };
+
+  if (loading) return <LoadingState message="RETRIEVING BOOKMARKS..." />;
+  if (error) return <ErrorState message={error} onRetry={fetchSavedJobs} />;
+
   return (
-    <StudentLayout title="Saved Jobs">
-      {loading ? (
-        <div className="flex justify-center p-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-        </div>
-      ) : savedJobs.length === 0 ? (
-        <div className="text-center bg-white p-12 rounded-lg border border-gray-200 shadow-sm">
-          <Bookmark className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No saved jobs</h3>
-          <p className="mt-1 text-sm text-gray-500 mb-6">You haven't saved any jobs yet.</p>
-          <Link to="/student/jobs" className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
-            Discover Jobs
-          </Link>
-        </div>
+    <div className="space-y-12">
+      <div className="border-b border-border-dark pb-12">
+        <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4">BOOKMARKED OPPORTUNITIES</h1>
+        <p className="text-sm font-semibold uppercase tracking-widest text-content-muted">Opportunities you have saved for future application.</p>
+      </div>
+
+      {savedJobs.length === 0 ? (
+        <EmptyState
+          icon={<Bookmark className="w-10 h-10" />}
+          title="NO BOOKMARKS DETECTED"
+          description="You haven't saved any opportunities yet. Explore the pipeline."
+          actionText="DISCOVER OPPORTUNITIES"
+          onAction={() => window.location.href = '/student/jobs'}
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {savedJobs.map((saved) => (
-            <div key={saved.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-              <div className="p-6 flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{saved.job.title}</h3>
-                  <button onClick={() => handleUnsave(saved.jobId)} className="text-gray-400 hover:text-red-500 transition-colors" title="Remove from saved">
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                </div>
-                
-                <div className="flex items-center text-sm text-gray-500 mb-4">
-                  <Building className="flex-shrink-0 mr-1.5 h-4 w-4" />
-                  <span className="line-clamp-1">{saved.job.company.name}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          {savedJobs.map(item => {
+            const job = item.job;
+            return (
+              <div key={item.id} className="border border-border-light bg-surface hover:border-inverted transition-colors group flex flex-col h-full">
+                <div className="p-8 flex-1">
+                  <div className="flex gap-6 items-start mb-8">
+                    <div className="w-12 h-12 bg-inverted text-inverted flex items-center justify-center font-bold text-xl shrink-0">
+                      {job.recruiter.companyName[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold uppercase tracking-tight group-hover:text-accent transition-colors line-clamp-1">
+                        {job.title}
+                      </h3>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mt-2 truncate">
+                        {job.recruiter.companyName}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-content">
+                      <MapPin className="w-4 h-4 text-content-muted" /> <span className="truncate">{job.location}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-content">
+                      <BriefcaseBusiness className="w-4 h-4 text-content-muted" /> {job.jobType}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-content">
+                      <IndianRupee className="w-4 h-4 text-content-muted" /> <span className="truncate">{job.salary || 'Not disclosed'}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <MapPin className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                    {saved.job.company.location || 'Not specified'}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                    Deadline: {new Date(saved.job.deadline).toLocaleDateString()}
-                  </div>
+                <div className="flex border-t border-border-light">
+                  <Button
+                    variant="ghost"
+                    onClick={() => removeSavedJob(job.id)}
+                    className="w-1/2 rounded-none border-r border-border-light text-status-danger hover:text-status-danger hover:bg-status-danger/10"
+                  >
+                    REMOVE
+                  </Button>
+                  <Link to={`/student/jobs/${job.id}`} className="w-1/2">
+                    <Button variant="inverted" className="w-full rounded-none group-hover:bg-accent group-hover:text-inverted">
+                      INSPECT
+                    </Button>
+                  </Link>
                 </div>
               </div>
-              <div className="bg-gray-50 px-6 py-3 border-t border-gray-200 flex justify-end">
-                <Link
-                  to={`/student/jobs/${saved.job.id}`}
-                  className="text-sm font-medium text-primary-600 hover:text-primary-500"
-                >
-                  View Details &rarr;
-                </Link>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
-    </StudentLayout>
+    </div>
   );
-};
-
-export default StudentSavedJobs;
+}

@@ -1,19 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '../../components/AdminLayout';
 import { api } from '../../services/api';
-import { Building2, Briefcase, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { StatusBadge } from '../../components/ui/Badge';
+import { LoadingState, ErrorState } from '../../components/ui/States';
+import { Link } from 'react-router-dom';
+import { Button } from '../../components/ui/Button';
+import { ArrowRight } from 'lucide-react';
 
-const AdminDashboard = () => {
+export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const data = await api('/admin/dashboard-stats');
-        setStats(data.stats);
+        const response = await api.get('/admin/dashboard-stats');
+        setStats(response.data.stats);
       } catch (err) {
-        console.error(err);
+        setError('Failed to load dashboard statistics.');
       } finally {
         setLoading(false);
       }
@@ -21,51 +25,116 @@ const AdminDashboard = () => {
     fetchStats();
   }, []);
 
-  const StatCard = ({ title, count, icon: Icon, colorClass, bgColorClass }) => (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center">
-      <div className={`p-4 rounded-full ${bgColorClass} mr-4`}>
-        <Icon className={`w-6 h-6 ${colorClass}`} />
+  if (loading) return <LoadingState message="INITIALIZING ADMIN CONSOLE..." />;
+  if (error) return <ErrorState message={error} />;
+
+  return (
+    <div className="space-y-16">
+
+      {/* Hero Header */}
+      <div className="bg-inverted text-content-inverted p-12 lg:p-24 relative overflow-hidden border border-border-dark">
+        <div className="absolute inset-0 grid-lines-dark opacity-40 pointer-events-none mix-blend-overlay z-0"></div>
+        <div className="relative z-10">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-accent mb-6 border-l-2 border-accent pl-3">
+            System Level: Administration
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-none mb-6">
+            PLATFORM GOVERNANCE<br/>
+            <span className="text-content-inverted-muted">COMMAND CENTER</span>
+          </h1>
+          <p className="text-sm font-semibold uppercase tracking-widest text-content-inverted-muted max-w-md">
+            Monitor system health and execute required approval workflows.
+          </p>
+        </div>
       </div>
+
+      {/* Metrics */}
       <div>
-        <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-        <p className="text-2xl font-bold text-gray-900">{count}</p>
+        <h3 className="text-sm font-bold uppercase tracking-widest text-content-muted mb-6">System Telemetry</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-border-light bg-surface">
+          <div className="p-8 border-b sm:border-b-0 sm:border-r border-border-light hover:bg-base transition-colors group">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-8 group-hover:text-inverted transition-colors">Total Students</p>
+            <h3 className="text-5xl font-bold tracking-tighter">{stats.totalStudents}</h3>
+          </div>
+
+          <div className="p-8 border-b lg:border-b-0 lg:border-r border-border-light hover:bg-base transition-colors group">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-8 group-hover:text-inverted transition-colors">Registered Companies</p>
+            <h3 className="text-5xl font-bold tracking-tighter">{stats.totalCompanies}</h3>
+          </div>
+
+          <div className="p-8 border-b sm:border-b-0 sm:border-r border-border-light hover:bg-base transition-colors group">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-8 group-hover:text-inverted transition-colors">Pending Company Approvals</p>
+            <h3 className={`text-5xl font-bold tracking-tighter ${stats.pendingCompanies > 0 ? 'text-status-warning' : ''}`}>{stats.pendingCompanies}</h3>
+          </div>
+
+          <div className="p-8 hover:bg-base transition-colors group">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-8 group-hover:text-inverted transition-colors">Pending Job Approvals</p>
+            <h3 className={`text-5xl font-bold tracking-tighter ${stats.pendingJobs > 0 ? 'text-status-warning' : ''}`}>{stats.pendingJobs}</h3>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+
+        {/* Pending Companies */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-content-muted">Requires Action: Companies</h3>
+            <Link to="/admin/companies" className="text-xs font-bold uppercase tracking-widest text-inverted hover:underline">
+              Execute Workflow
+            </Link>
+          </div>
+          <div className="border border-border-light bg-surface divide-y divide-border-light">
+            {stats.recentPendingCompanies?.length === 0 ? (
+              <div className="p-12 text-center text-xs font-bold uppercase tracking-widest text-content-muted">ALL CLEAR. NO PENDING ENTITIES.</div>
+            ) : (
+              stats.recentPendingCompanies?.map(company => (
+                <div key={company.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-base transition-colors">
+                  <div>
+                    <h4 className="text-lg font-bold tracking-tight uppercase">{company.companyName}</h4>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-content-muted mt-2">
+                      {company.user.email} <span className="mx-2">/</span> {new Date(company.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="shrink-0">
+                    <StatusBadge status={company.status} />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Pending Jobs */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-content-muted">Requires Action: Opportunities</h3>
+            <Link to="/admin/jobs" className="text-xs font-bold uppercase tracking-widest text-inverted hover:underline">
+              Execute Workflow
+            </Link>
+          </div>
+          <div className="border border-border-light bg-surface divide-y divide-border-light">
+            {stats.recentPendingJobs?.length === 0 ? (
+              <div className="p-12 text-center text-xs font-bold uppercase tracking-widest text-content-muted">ALL CLEAR. NO PENDING ENTITIES.</div>
+            ) : (
+              stats.recentPendingJobs?.map(job => (
+                <div key={job.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-base transition-colors">
+                  <div>
+                    <h4 className="text-lg font-bold tracking-tight uppercase">{job.title}</h4>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-content-muted mt-2">
+                      {job.recruiter.companyName} <span className="mx-2">/</span> {new Date(job.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="shrink-0">
+                    <StatusBadge status={job.status} />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );
-
-  return (
-    <AdminLayout title="Dashboard">
-      {loading ? (
-        <div className="text-gray-500">Loading dashboard...</div>
-      ) : (
-        <div className="space-y-8">
-          <section>
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <Building2 className="w-5 h-5 mr-2 text-primary-600" />
-              Company Governance
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard title="Pending Review" count={stats?.companies.pending || 0} icon={Clock} colorClass="text-yellow-600" bgColorClass="bg-yellow-50" />
-              <StatCard title="Approved Companies" count={stats?.companies.approved || 0} icon={CheckCircle} colorClass="text-green-600" bgColorClass="bg-green-50" />
-              <StatCard title="Rejected Companies" count={stats?.companies.rejected || 0} icon={XCircle} colorClass="text-red-600" bgColorClass="bg-red-50" />
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <Briefcase className="w-5 h-5 mr-2 text-primary-600" />
-              Job Governance
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard title="Pending Review" count={stats?.jobs.pending || 0} icon={Clock} colorClass="text-yellow-600" bgColorClass="bg-yellow-50" />
-              <StatCard title="Approved Jobs" count={stats?.jobs.approved || 0} icon={CheckCircle} colorClass="text-green-600" bgColorClass="bg-green-50" />
-              <StatCard title="Rejected Jobs" count={stats?.jobs.rejected || 0} icon={XCircle} colorClass="text-red-600" bgColorClass="bg-red-50" />
-            </div>
-          </section>
-        </div>
-      )}
-    </AdminLayout>
-  );
-};
-
-export default AdminDashboard;
+}

@@ -1,180 +1,174 @@
-import React, { useEffect, useState } from 'react';
-import StudentLayout from '../../components/StudentLayout';
-import api from '../../services/api';
+import React, { useState, useEffect } from 'react';
+import { api } from '../../services/api';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Input, Select } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
+import { LoadingState } from '../../components/ui/States';
+import { User, GraduationCap, CheckSquare, AlertTriangle } from 'lucide-react';
 
-const StudentProfile = () => {
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
-    branch: '',
+export default function StudentProfile() {
+  const [profile, setProfile] = useState({
+    fullName: '',
+    phone: '',
+    department: '',
     cgpa: '',
     graduationYear: '',
-    resumeUrl: '',
-    backlogs: ''
+    resumeUrl: ''
   });
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await api.get('/student/profile');
-        setProfile(res.data.profile);
-        setFormData({
-          branch: res.data.profile.branch || '',
-          cgpa: res.data.profile.cgpa || '',
-          graduationYear: res.data.profile.graduationYear || '',
-          resumeUrl: res.data.profile.resumeUrl || '',
-          backlogs: res.data.profile.backlogs ?? 0
-        });
-      } catch (err) {
-        setError('Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProfile();
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const fetchProfile = async () => {
+    try {
+      const response = await api.get('/student/profile');
+      if (response.data.profile) {
+        setProfile({
+          fullName: response.data.profile.fullName || '',
+          phone: response.data.profile.phone || '',
+          department: response.data.profile.department || '',
+          cgpa: response.data.profile.cgpa || '',
+          graduationYear: response.data.profile.graduationYear || '',
+          resumeUrl: response.data.profile.resumeUrl || ''
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setMessage('');
-    setError('');
-
-    const payload = {};
-    if (formData.branch) payload.branch = formData.branch;
-    if (formData.cgpa) payload.cgpa = parseFloat(formData.cgpa);
-    if (formData.graduationYear) payload.graduationYear = parseInt(formData.graduationYear, 10);
-    payload.resumeUrl = formData.resumeUrl; // Allow empty string
-    if (formData.backlogs !== '') payload.backlogs = parseInt(formData.backlogs, 10);
+    setMessage(null);
 
     try {
-      const res = await api.patch('/student/profile', payload);
-      setProfile(res.data.profile);
-      setMessage('Profile updated successfully');
+      const payload = {
+        ...profile,
+        cgpa: profile.cgpa ? parseFloat(profile.cgpa) : null,
+        graduationYear: profile.graduationYear ? parseInt(profile.graduationYear) : null
+      };
+
+      await api.post('/student/profile', payload);
+      setMessage({ type: 'success', text: 'PROFILE TELEMETRY UPDATED.' });
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update profile');
-      if (err.response?.data?.errors) {
-        setError(err.response.data.errors.map(e => e.message).join(', '));
-      }
+      setMessage({ type: 'error', text: err.response?.data?.error || 'FAILED TO UPDATE PROFILE.' });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <StudentLayout title="My Profile"><div className="flex justify-center p-8"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div></StudentLayout>;
+  if (loading) return <LoadingState message="RETRIEVING PROFILE TELEMETRY..." />;
+
+  const branches = ['CSE', 'ECE', 'MECH', 'CIVIL', 'EEE', 'IT'];
 
   return (
-    <StudentLayout title="My Profile">
-      <div className="max-w-3xl mx-auto">
-        {message && <div className="mb-4 bg-green-50 text-green-700 p-4 rounded-md">{message}</div>}
-        {error && <div className="mb-4 bg-red-50 text-red-600 p-4 rounded-md">{error}</div>}
+    <div className="space-y-12 max-w-5xl">
+      <div className="border-b border-border-dark pb-12">
+        <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4">STUDENT PROFILE</h1>
+        <p className="text-sm font-semibold uppercase tracking-widest text-content-muted">Manage your personal and academic identifiers.</p>
+      </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-medium text-gray-800">Account Information</h2>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                <div className="mt-1 p-2 bg-gray-100 border border-gray-200 rounded-md text-gray-600">{profile?.user?.email}</div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Member Since</label>
-                <div className="mt-1 p-2 bg-gray-100 border border-gray-200 rounded-md text-gray-600">{new Date(profile?.user?.createdAt).toLocaleDateString()}</div>
-              </div>
-            </div>
-          </div>
+      {message && (
+        <div className={`p-6 border text-xs font-bold uppercase tracking-widest flex items-center gap-4 ${
+          message.type === 'success' ? 'bg-status-success/10 border-status-success text-status-success' : 'bg-status-danger/10 border-status-danger text-status-danger'
+        }`}>
+          {message.type === 'success' ? <CheckSquare className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+          {message.text}
         </div>
+      )}
 
-        <form onSubmit={handleSubmit} className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-medium text-gray-800">Academic Profile</h2>
-            <p className="text-sm text-gray-500">Update your details to check job eligibility accurately.</p>
-          </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Department / Branch</label>
-                <input
-                  type="text"
-                  name="branch"
-                  value={formData.branch}
-                  onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border p-2"
-                  placeholder="e.g., CSE, IT, ECE"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Graduation Year</label>
-                <input
+      <form onSubmit={handleSubmit} className="space-y-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <User className="w-5 h-5" />
+                Personal Identifiers
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <Input
+                label="Full Name"
+                value={profile.fullName}
+                onChange={(e) => setProfile({...profile, fullName: e.target.value})}
+                required
+                placeholder="e.g. John Doe"
+              />
+              <Input
+                label="Phone Designation"
+                value={profile.phone}
+                onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                placeholder="+91 XXXXX XXXXX"
+              />
+              <Input
+                label="Resume URL"
+                type="url"
+                value={profile.resumeUrl}
+                onChange={(e) => setProfile({...profile, resumeUrl: e.target.value})}
+                placeholder="https://drive.google.com/..."
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <GraduationCap className="w-5 h-5" />
+                Academic Parameters
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <Select
+                label="Department Classification"
+                value={profile.department}
+                onChange={(e) => setProfile({...profile, department: e.target.value})}
+                options={[
+                  { value: '', label: 'Select Classification' },
+                  ...branches.map(b => ({ value: b, label: b }))
+                ]}
+                required
+              />
+              <div className="grid grid-cols-2 gap-6">
+                <Input
+                  label="CGPA Metric"
                   type="number"
-                  name="graduationYear"
-                  value={formData.graduationYear}
-                  onChange={handleChange}
-                  min="2000"
-                  max="2100"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border p-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">CGPA</label>
-                <input
-                  type="number"
-                  name="cgpa"
-                  value={formData.cgpa}
-                  onChange={handleChange}
                   step="0.01"
                   min="0"
                   max="10"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border p-2"
+                  value={profile.cgpa}
+                  onChange={(e) => setProfile({...profile, cgpa: e.target.value})}
+                  placeholder="e.g. 8.5"
+                  required
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Active Backlogs</label>
-                <input
+                <Input
+                  label="Graduation Year"
                   type="number"
-                  name="backlogs"
-                  value={formData.backlogs}
-                  onChange={handleChange}
-                  min="0"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border p-2"
+                  min="2020"
+                  max="2030"
+                  value={profile.graduationYear}
+                  onChange={(e) => setProfile({...profile, graduationYear: e.target.value})}
+                  placeholder="e.g. 2026"
+                  required
                 />
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Resume URL</label>
-              <input
-                type="url"
-                name="resumeUrl"
-                value={formData.resumeUrl}
-                onChange={handleChange}
-                placeholder="https://link-to-your-resume.pdf"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border p-2"
-              />
-              <p className="mt-1 text-xs text-gray-500">Provide a link to your hosted resume (e.g., Google Drive link)</p>
-            </div>
-          </div>
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex justify-center rounded-md border border-transparent bg-primary-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:bg-gray-400"
-            >
-              {saving ? 'Saving...' : 'Save Profile'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </StudentLayout>
-  );
-};
+            </CardContent>
+          </Card>
+        </div>
 
-export default StudentProfile;
+        <div className="flex justify-end pt-8 border-t border-border-dark">
+          <Button type="submit" loading={saving} variant="inverted" size="lg">
+            COMMIT PROFILE CHANGES
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}

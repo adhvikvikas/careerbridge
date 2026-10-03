@@ -1,177 +1,198 @@
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '../../components/AdminLayout';
 import { api } from '../../services/api';
-import { Check, X, Search, Loader2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/Table';
+import { StatusBadge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { LoadingState, ErrorState, EmptyState } from '../../components/ui/States';
+import { Modal } from '../../components/ui/Modal';
+import { Textarea } from '../../components/ui/Input';
+import { Building2, Search } from 'lucide-react';
+import { Input } from '../../components/ui/Input';
 
-const AdminCompanies = () => {
+export default function AdminCompanies() {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('PENDING');
-  const [processingId, setProcessingId] = useState(null);
-  
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [targetId, setTargetId] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
 
   const fetchCompanies = async () => {
     try {
-      setLoading(true);
-      const data = await api(`/admin/companies?status=${filter}`);
-      setCompanies(data.companies);
+      const response = await api.get('/admin/companies');
+      setCompanies(response.data.companies);
     } catch (err) {
-      setError(err.message);
+      setError('Failed to fetch companies');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchCompanies();
-  }, [filter]);
-
   const handleApprove = async (id) => {
+    setActionLoading(true);
     try {
-      setProcessingId(id);
-      await api(`/admin/companies/${id}/approve`, { method: 'PATCH' });
-      fetchCompanies();
+      await api.patch(`/admin/companies/${id}/status`, { status: 'APPROVED' });
+      await fetchCompanies();
     } catch (err) {
-      alert(err.message);
+      alert('Failed to approve company');
     } finally {
-      setProcessingId(null);
+      setActionLoading(false);
     }
   };
 
-  const handleRejectClick = (id) => {
-    setTargetId(id);
-    setRejectReason('');
-    setShowRejectModal(true);
+  const openRejectModal = (id) => {
+    setSelectedCompanyId(id);
+    setRejectionReason('');
+    setIsRejectModalOpen(true);
   };
 
-  const confirmReject = async () => {
+  const handleReject = async () => {
+    if (!rejectionReason.trim()) {
+      alert('Please provide a reason for rejection.');
+      return;
+    }
+    setActionLoading(true);
     try {
-      if (rejectReason.length < 5) return alert('Reason too short');
-      setProcessingId(targetId);
-      setShowRejectModal(false);
-      await api(`/admin/companies/${targetId}/reject`, {
-        method: 'PATCH',
-        body: JSON.stringify({ reason: rejectReason })
+      await api.patch(`/admin/companies/${selectedCompanyId}/status`, {
+        status: 'REJECTED',
+        reason: rejectionReason
       });
-      fetchCompanies();
+      setIsRejectModalOpen(false);
+      await fetchCompanies();
     } catch (err) {
-      alert(err.message);
+      alert('Failed to reject company');
     } finally {
-      setProcessingId(null);
-      setTargetId(null);
+      setActionLoading(false);
     }
   };
+
+  if (loading) return <LoadingState message="RETRIEVING REGISTRY..." />;
+  if (error) return <ErrorState message={error} onRetry={fetchCompanies} />;
+
+  const filteredCompanies = companies.filter(c =>
+    c.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <AdminLayout title="Manage Companies">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex gap-2">
-          {['PENDING', 'APPROVED', 'REJECTED'].map(status => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                filter === status 
-                  ? 'bg-primary-600 text-white' 
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {status}
-            </button>
-          ))}
+    <div className="space-y-12">
+      <div className="border-b border-border-dark pb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4">COMPANY REGISTRY</h1>
+          <p className="text-sm font-semibold uppercase tracking-widest text-content-muted">Govern platform access and verify corporate entities.</p>
+        </div>
+        <div className="w-full md:w-72">
+          <Input
+            icon={<Search className="w-5 h-5" />}
+            placeholder="Search companies..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : companies.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No {filter.toLowerCase()} companies found.</div>
-        ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recruiter</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Industry</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                {filter === 'PENDING' && <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {companies.map(company => (
-                <tr key={company.id}>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{company.name}</div>
-                    <div className="text-sm text-gray-500">{company.location || 'No location'}</div>
-                    {company.rejectionReason && (
-                      <div className="text-xs text-red-500 mt-1">Reason: {company.rejectionReason}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{company.recruiter?.name}</div>
-                    <div className="text-sm text-gray-500">{company.recruiter?.user?.email}</div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {company.industry || '-'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      company.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                      company.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {company.status}
-                    </span>
-                  </td>
-                  {filter === 'PENDING' && (
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <button 
+      {filteredCompanies.length === 0 ? (
+        <EmptyState
+          icon={<Building2 className="w-10 h-10" />}
+          title="NO COMPANIES FOUND"
+          description="There are currently no companies matching your query."
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Entity Identity</TableHead>
+              <TableHead>Recruiter Access</TableHead>
+              <TableHead>Registered Date</TableHead>
+              <TableHead>Authorization Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredCompanies.map(company => (
+              <TableRow key={company.id}>
+                <TableCell>
+                  <div className="font-bold tracking-tight uppercase">{company.companyName}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="text-xs font-semibold tracking-widest text-content-muted uppercase">{company.user.email}</div>
+                </TableCell>
+                <TableCell className="text-xs font-semibold tracking-widest text-content-muted uppercase">
+                  {new Date(company.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={company.status} />
+                </TableCell>
+                <TableCell className="text-right">
+                  {company.status === 'PENDING' && (
+                    <div className="flex justify-end gap-3">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => openRejectModal(company.id)}
+                        disabled={actionLoading}
+                        className="text-status-danger border-status-danger/20 hover:bg-status-danger/10"
+                      >
+                        REJECT
+                      </Button>
+                      <Button
+                        variant="accent"
+                        size="sm"
                         onClick={() => handleApprove(company.id)}
-                        disabled={processingId === company.id}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                        disabled={actionLoading}
                       >
-                        <Check className="w-4 h-4 mr-1" /> Approve
-                      </button>
-                      <button 
-                        onClick={() => handleRejectClick(company.id)}
-                        disabled={processingId === company.id}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
-                      >
-                        <X className="w-4 h-4 mr-1" /> Reject
-                      </button>
-                    </td>
+                        AUTHORIZE
+                      </Button>
+                    </div>
                   )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+                  {company.status === 'REJECTED' && (
+                    <Button
+                      variant="outline-inverted"
+                      size="sm"
+                      onClick={() => handleApprove(company.id)}
+                      disabled={actionLoading}
+                    >
+                      OVERRIDE: AUTHORIZE
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
-      {showRejectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">Reject Company</h3>
-            <textarea
-              className="w-full border border-gray-300 rounded-md p-2 mb-4 h-32"
-              placeholder="Please provide a reason for rejection (min 5 chars)..."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-            ></textarea>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowRejectModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancel</button>
-              <button onClick={confirmReject} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Confirm Rejection</button>
-            </div>
+      <Modal
+        isOpen={isRejectModalOpen}
+        onClose={() => setIsRejectModalOpen(false)}
+        title="Reject Company"
+      >
+        <div className="space-y-6">
+          <Textarea
+            label="Rejection Reason"
+            placeholder="Provide a clear reason for rejecting this entity..."
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            rows={4}
+          />
+          <div className="flex justify-end gap-4 pt-4 border-t border-border-light">
+            <Button variant="ghost" onClick={() => setIsRejectModalOpen(false)}>
+              CANCEL
+            </Button>
+            <Button variant="danger" onClick={handleReject} loading={actionLoading}>
+              CONFIRM REJECTION
+            </Button>
           </div>
         </div>
-      )}
-    </AdminLayout>
+      </Modal>
+    </div>
   );
-};
-
-export default AdminCompanies;
+}

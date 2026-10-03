@@ -25,7 +25,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
       <div className="min-h-screen p-8 bg-gray-50 flex flex-col items-center justify-center text-center">
         <h1 className="text-3xl font-bold text-red-600 mb-2">Access Denied</h1>
         <p className="text-gray-500 mb-6">You do not have permission to view this page.</p>
-        <button 
+        <button
           onClick={() => window.history.back()}
           className="text-primary-600 hover:underline"
         >

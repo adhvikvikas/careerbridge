@@ -1,18 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '../../components/AdminLayout';
 import { api } from '../../services/api';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/Table';
+import { LoadingState, ErrorState, EmptyState } from '../../components/ui/States';
+import { FileText } from 'lucide-react';
+import { Badge } from '../../components/ui/Badge';
 
-const AdminAuditLogs = () => {
+export default function AdminAuditLogs() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const data = await api('/admin/audit-logs');
-        setLogs(data.logs);
+        const response = await api.get('/admin/audit-logs');
+        setLogs(response.data.logs);
       } catch (err) {
-        console.error(err);
+        setError('Failed to load audit telemetry.');
       } finally {
         setLoading(false);
       }
@@ -20,52 +24,69 @@ const AdminAuditLogs = () => {
     fetchLogs();
   }, []);
 
-  return (
-    <AdminLayout title="Audit Logs">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : logs.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No audit logs found.</div>
-        ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {logs.map(log => (
-                <tr key={log.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(log.createdAt).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {log.admin?.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded bg-blue-50 text-blue-700">
-                      {log.action}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {log.targetType} ({log.targetId.substring(0, 8)}...)
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {log.reason || '-'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </AdminLayout>
-  );
-};
+  if (loading) return <LoadingState message="RETRIEVING AUDIT TELEMETRY..." />;
+  if (error) return <ErrorState message={error} />;
 
-export default AdminAuditLogs;
+  return (
+    <div className="space-y-12">
+      <div className="border-b border-border-dark pb-12">
+        <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4">SYSTEM AUDIT TELEMETRY</h1>
+        <p className="text-sm font-semibold uppercase tracking-widest text-content-muted">Immutable ledger of administrative actions.</p>
+      </div>
+
+      {logs.length === 0 ? (
+        <EmptyState
+          icon={<FileText className="w-10 h-10" />}
+          title="NO LOGS DETECTED"
+          description="The system audit ledger is currently empty."
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>TIMESTAMP</TableHead>
+              <TableHead>ADMINISTRATOR</TableHead>
+              <TableHead>ACTION TYPE</TableHead>
+              <TableHead>TARGET ENTITY</TableHead>
+              <TableHead>METADATA</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {logs.map(log => (
+              <TableRow key={log.id}>
+                <TableCell className="text-xs font-semibold tracking-widest text-content-muted uppercase whitespace-nowrap">
+                  {new Date(log.createdAt).toLocaleString()}
+                </TableCell>
+                <TableCell>
+                  <div className="font-bold tracking-tight uppercase">{log.admin.email}</div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={
+                    log.action.includes('REJECT') ? 'danger' :
+                    log.action.includes('APPROVE') ? 'success' : 'default'
+                  }>
+                    {log.action}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <span className="text-xs font-semibold tracking-widest text-content-muted uppercase">
+                    {log.targetType} <br/> {log.targetId}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  {log.details ? (
+                    <div className="text-xs text-content-muted max-w-xs truncate" title={log.details}>
+                      {log.details}
+                    </div>
+                  ) : (
+                    <span className="text-content-muted/50">-</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}

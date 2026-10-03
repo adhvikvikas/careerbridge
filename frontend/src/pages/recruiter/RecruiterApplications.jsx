@@ -1,127 +1,100 @@
 import React, { useEffect, useState } from 'react';
-import RecruiterLayout from '../../components/RecruiterLayout';
-import { api } from '../../services/api';
 import { useParams, Link } from 'react-router-dom';
-import { User, Eye, Search } from 'lucide-react';
+import { api } from '../../services/api';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/Table';
+import { StatusBadge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { LoadingState, ErrorState, EmptyState } from '../../components/ui/States';
+import { FileText, ArrowLeft, ArrowUpRight } from 'lucide-react';
 
-const RecruiterApplications = () => {
-  const { id: jobId } = useParams();
+export default function RecruiterApplications() {
+  const { id } = useParams();
+  const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [job, setJob] = useState(null);
-  
-  const [statusFilter, setStatusFilter] = useState('');
-  const [searchName, setSearchName] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const queryParams = new URLSearchParams();
-        if (statusFilter) queryParams.append('status', statusFilter);
-        if (searchName) queryParams.append('name', searchName);
-
-        const [jobData, appData] = await Promise.all([
-          api(`/recruiter/jobs/${jobId}`),
-          api(`/recruiter/jobs/${jobId}/applications?${queryParams.toString()}`)
-        ]);
-        
-        setJob(jobData.job);
-        setApplications(appData.applications);
+        const response = await api.get(`/recruiter/jobs/${id}/applications`);
+        setJob(response.data.job);
+        setApplications(response.data.applications);
       } catch (err) {
-        console.error(err);
+        setError('Failed to retrieve applicant pipeline.');
       } finally {
         setLoading(false);
       }
     };
     fetchApplications();
-  }, [jobId, statusFilter, searchName]);
+  }, [id]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    // Search is handled by the effect dependency
-  };
+  if (loading) return <LoadingState message="RETRIEVING APPLICANT PIPELINE..." />;
+  if (error) return <ErrorState message={error} />;
 
   return (
-    <RecruiterLayout title={`Applicants for ${job ? job.title : 'Job'}`}>
-      <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-        <form onSubmit={handleSearch} className="flex gap-2 w-full max-w-md">
-          <div className="relative flex-1">
-            <Search className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by email..."
-              value={searchName}
-              onChange={(e) => setSearchName(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-        </form>
+    <div className="space-y-12">
+      <Link to="/recruiter/jobs">
+        <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />} className="mb-4">
+          Return to Pipeline
+        </Button>
+      </Link>
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="border border-gray-300 rounded-md px-4 py-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
-        >
-          <option value="">All Statuses</option>
-          <option value="APPLIED">Applied</option>
-          <option value="UNDER_REVIEW">Under Review</option>
-          <option value="SHORTLISTED">Shortlisted</option>
-          <option value="INTERVIEW">Interview</option>
-          <option value="SELECTED">Selected</option>
-          <option value="REJECTED">Rejected</option>
-        </select>
+      <div className="border-b border-border-dark pb-12">
+        <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4">{job.title}</h1>
+        <p className="text-sm font-semibold uppercase tracking-widest text-content-muted">APPLICANT PIPELINE</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading applicants...</div>
-        ) : applications.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No applicants found.</div>
-        ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Candidate</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department/Year</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CGPA</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied On</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {applications.map(app => (
-                <tr key={app.id}>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{app.student?.user?.email}</div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {app.student?.branch || '-'} ({app.student?.graduationYear || '-'})
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                    {app.student?.cgpa || '-'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                      {app.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(app.appliedAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <Link to={`/recruiter/applications/${app.id}`} className="text-primary-600 hover:text-primary-900 inline-flex items-center text-sm font-medium">
-                      <Eye className="w-4 h-4 mr-1" /> View
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </RecruiterLayout>
+      {applications.length === 0 ? (
+        <EmptyState
+          icon={<FileText className="w-10 h-10" />}
+          title="NO APPLICANTS YET"
+          description="The pipeline for this opportunity is currently empty."
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Candidate Profile</TableHead>
+              <TableHead>Submission Date</TableHead>
+              <TableHead>Current Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {applications.map(app => (
+              <TableRow key={app.id}>
+                <TableCell>
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-inverted text-inverted flex items-center justify-center font-bold">
+                      {app.student.user.email[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-bold tracking-tight uppercase">{app.student.fullName || app.student.user.email}</div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-content-muted mt-1">
+                        {app.student.department} / CGPA: {app.student.cgpa}
+                      </div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="text-xs font-semibold tracking-widest text-content-muted uppercase">
+                  {new Date(app.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={app.status} />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Link to={`/recruiter/applications/${app.id}`}>
+                    <Button variant="outline-inverted" size="sm" icon={<ArrowUpRight className="w-4 h-4" />}>
+                      INSPECT
+                    </Button>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
   );
-};
-
-export default RecruiterApplications;
+}

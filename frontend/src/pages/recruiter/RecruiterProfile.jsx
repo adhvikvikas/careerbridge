@@ -1,142 +1,130 @@
-import React, { useEffect, useState } from 'react';
-import RecruiterLayout from '../../components/RecruiterLayout';
+import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { Building2, User, Mail, Phone, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Input, Textarea } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
+import { LoadingState } from '../../components/ui/States';
+import { Building2, CheckSquare, AlertTriangle } from 'lucide-react';
 
-const RecruiterProfile = () => {
-  const [profile, setProfile] = useState(null);
+export default function RecruiterProfile() {
+  const [profile, setProfile] = useState({
+    companyName: '',
+    industry: '',
+    website: '',
+    description: ''
+  });
+
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await api('/recruiter/profile');
-        setProfile(data.profile);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProfile();
   }, []);
 
-  if (loading) {
-    return (
-      <RecruiterLayout title="My Company">
-        <div className="text-gray-500">Loading profile...</div>
-      </RecruiterLayout>
-    );
-  }
+  const fetchProfile = async () => {
+    try {
+      const response = await api.get('/recruiter/profile');
+      if (response.data.profile) {
+        setProfile({
+          companyName: response.data.profile.companyName || '',
+          industry: response.data.profile.industry || '',
+          website: response.data.profile.website || '',
+          description: response.data.profile.description || ''
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (!profile) {
-    return (
-      <RecruiterLayout title="My Company">
-        <div className="text-red-500">Failed to load profile.</div>
-      </RecruiterLayout>
-    );
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setMessage(null);
 
-  const company = profile.companies[0];
+    try {
+      await api.post('/recruiter/profile', profile);
+      setMessage({ type: 'success', text: 'PROFILE UPDATED AND SUBMITTED FOR REVIEW.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.error || 'FAILED TO UPDATE PROFILE.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <LoadingState message="RETRIEVING ENTITY PROFILE..." />;
 
   return (
-    <RecruiterLayout title="My Company">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Recruiter Details */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-            <User className="w-5 h-5 mr-2 text-primary-600" />
-            Recruiter Details
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-500">Name</label>
-              <div className="mt-1 text-gray-900 font-medium">{profile.name}</div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500 flex items-center">
-                <Mail className="w-4 h-4 mr-1" /> Email
-              </label>
-              <div className="mt-1 text-gray-900 font-medium">{profile.user?.email}</div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500 flex items-center">
-                <Phone className="w-4 h-4 mr-1" /> Phone
-              </label>
-              <div className="mt-1 text-gray-900 font-medium">{profile.phone || '-'}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Company Details */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center justify-between">
-            <div className="flex items-center">
-              <Building2 className="w-5 h-5 mr-2 text-primary-600" />
-              Company Details
-            </div>
-            {company && (
-              <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                company.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                company.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                'bg-yellow-100 text-yellow-800'
-              }`}>
-                {company.status}
-              </span>
-            )}
-          </h2>
-          
-          {company ? (
-            <div className="space-y-4">
-              {company.status === 'REJECTED' && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-md flex items-start">
-                  <XCircle className="w-5 h-5 text-red-500 mr-2 mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-medium text-red-800">Company Rejected</h4>
-                    <p className="text-sm text-red-700 mt-1">{company.rejectionReason}</p>
-                  </div>
-                </div>
-              )}
-              {company.status === 'PENDING' && (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
-                  <AlertCircle className="w-5 h-5 text-yellow-500 mr-2 mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-medium text-yellow-800">Pending Approval</h4>
-                    <p className="text-sm text-yellow-700 mt-1">Your company is waiting for admin approval. You can create jobs, but they will not be visible to students until the company is approved.</p>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="text-sm font-medium text-gray-500">Company Name</label>
-                <div className="mt-1 text-gray-900 font-medium">{company.name}</div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Industry</label>
-                <div className="mt-1 text-gray-900">{company.industry || '-'}</div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Location</label>
-                <div className="mt-1 text-gray-900">{company.location || '-'}</div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Website</label>
-                <div className="mt-1 text-blue-600 hover:underline">
-                  <a href={company.website} target="_blank" rel="noopener noreferrer">{company.website || '-'}</a>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Description</label>
-                <div className="mt-1 text-gray-900 text-sm whitespace-pre-wrap">{company.description || '-'}</div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-gray-500">No company registered yet.</div>
-          )}
-        </div>
+    <div className="space-y-12 max-w-4xl">
+      <div className="border-b border-border-dark pb-12">
+        <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4">CORPORATE ENTITY PROFILE</h1>
+        <p className="text-sm font-semibold uppercase tracking-widest text-content-muted">Manage your organization's identity within the platform.</p>
       </div>
-    </RecruiterLayout>
-  );
-};
 
-export default RecruiterProfile;
+      {message && (
+        <div className={`p-6 border text-xs font-bold uppercase tracking-widest flex items-center gap-4 ${
+          message.type === 'success' ? 'bg-status-success/10 border-status-success text-status-success' : 'bg-status-danger/10 border-status-danger text-status-danger'
+        }`}>
+          {message.type === 'success' ? <CheckSquare className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+          {message.text}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-12">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <Building2 className="w-5 h-5" />
+              Entity Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <Input
+              label="Entity Name"
+              value={profile.companyName}
+              onChange={(e) => setProfile({...profile, companyName: e.target.value})}
+              required
+              placeholder="e.g. Acme Corp"
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Sector / Industry"
+                value={profile.industry}
+                onChange={(e) => setProfile({...profile, industry: e.target.value})}
+                required
+                placeholder="e.g. Technology"
+              />
+              <Input
+                label="Domain / Website"
+                type="url"
+                value={profile.website}
+                onChange={(e) => setProfile({...profile, website: e.target.value})}
+                required
+                placeholder="https://..."
+              />
+            </div>
+
+            <Textarea
+              label="Entity Description"
+              value={profile.description}
+              onChange={(e) => setProfile({...profile, description: e.target.value})}
+              required
+              rows={6}
+              placeholder="Provide a comprehensive overview of the organization..."
+            />
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end pt-8 border-t border-border-dark">
+          <Button type="submit" variant="inverted" size="lg" loading={saving}>
+            COMMIT PROFILE CHANGES
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}

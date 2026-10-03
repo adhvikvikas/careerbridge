@@ -1,224 +1,270 @@
 import React, { useState, useEffect } from 'react';
-import RecruiterLayout from '../../components/RecruiterLayout';
-import { api } from '../../services/api';
 import { useNavigate, useParams } from 'react-router-dom';
+import { api } from '../../services/api';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Input, Select, Textarea } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
+import { LoadingState } from '../../components/ui/States';
+import { BriefcaseBusiness, Users, AlertTriangle } from 'lucide-react';
 
-const RecruiterJobForm = () => {
+export default function RecruiterJobForm() {
   const { id } = useParams();
-  const isEdit = !!id;
+  const isEditing = !!id;
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    minCgpa: '',
-    departments: '',
-    graduationYears: '',
+    requirements: '',
+    location: '',
+    jobType: 'FULL_TIME',
+    salary: '',
     deadline: '',
-    openings: ''
+    cgpaRequired: '',
+    allowedBranches: []
   });
 
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(isEdit);
-  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(isEditing);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (isEdit) {
-      const fetchJob = async () => {
-        try {
-          const data = await api(`/recruiter/jobs/${id}`);
-          const job = data.job;
-          setStatus(job.status);
-          setFormData({
-            title: job.title,
-            description: job.description,
-            minCgpa: job.minCgpa || '',
-            departments: job.departments.join(', '),
-            graduationYears: job.graduationYears.join(', '),
-            deadline: new Date(job.deadline).toISOString().split('T')[0],
-            openings: job.openings || ''
-          });
-        } catch (err) {
-          setError('Failed to fetch job details');
-        } finally {
-          setFetching(false);
-        }
-      };
+    if (isEditing) {
       fetchJob();
     }
-  }, [id, isEdit]);
+  }, [id]);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
+  const fetchJob = async () => {
     try {
-      const payload = {
-        title: formData.title,
-        description: formData.description,
-        minCgpa: formData.minCgpa ? parseFloat(formData.minCgpa) : null,
-        departments: formData.departments.split(',').map(d => d.trim()).filter(Boolean),
-        graduationYears: formData.graduationYears.split(',').map(y => parseInt(y.trim())).filter(y => !isNaN(y)),
-        deadline: new Date(formData.deadline).toISOString(),
-        openings: formData.openings ? parseInt(formData.openings) : null
-      };
+      const response = await api.get(`/recruiter/jobs/${id}`);
+      const job = response.data.job;
 
-      if (isEdit) {
-        await api(`/recruiter/jobs/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
-      } else {
-        await api('/recruiter/jobs', { method: 'POST', body: JSON.stringify(payload) });
-      }
-      navigate('/recruiter/jobs');
+      setFormData({
+        title: job.title,
+        description: job.description,
+        requirements: job.requirements,
+        location: job.location,
+        jobType: job.jobType,
+        salary: job.salary || '',
+        deadline: job.deadline ? new Date(job.deadline).toISOString().split('T')[0] : '',
+        cgpaRequired: job.cgpaRequired ? job.cgpaRequired.toString() : '',
+        allowedBranches: job.allowedBranches || []
+      });
     } catch (err) {
-      setError(err.message || 'Validation failed');
+      setError('Failed to load job details.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (fetching) return <RecruiterLayout title="Edit Job"><div className="text-gray-500">Loading...</div></RecruiterLayout>;
+  const handleBranchToggle = (branch) => {
+    setFormData(prev => {
+      const branches = [...prev.allowedBranches];
+      if (branches.includes(branch)) {
+        return { ...prev, allowedBranches: branches.filter(b => b !== branch) };
+      } else {
+        return { ...prev, allowedBranches: [...branches, branch] };
+      }
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+
+    try {
+      const payload = {
+        ...formData,
+        cgpaRequired: formData.cgpaRequired ? parseFloat(formData.cgpaRequired) : null,
+      };
+
+      if (isEditing) {
+        await api.put(`/recruiter/jobs/${id}`, payload);
+      } else {
+        await api.post('/recruiter/jobs', payload);
+      }
+
+      navigate('/recruiter/jobs');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to save job.');
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <LoadingState message="RETRIEVING OPPORTUNITY SCHEMA..." />;
+
+  const branches = ['CSE', 'ECE', 'MECH', 'CIVIL', 'EEE', 'IT'];
 
   return (
-    <RecruiterLayout title={isEdit ? 'Edit Job Posting' : 'Post a New Job'}>
-      <div className="max-w-2xl bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        
-        {isEdit && status === 'APPROVED' && (
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-            <h4 className="text-sm font-medium text-yellow-800">Warning</h4>
-            <p className="text-sm text-yellow-700 mt-1">
-              This job is currently <strong>APPROVED</strong>. Submitting significant edits will reset its status to <strong>PENDING</strong> and require admin review again.
-            </p>
-          </div>
-        )}
+    <div className="space-y-12">
+      <div className="border-b border-border-dark pb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4">
+            {isEditing ? 'MODIFY OPPORTUNITY' : 'INITIALIZE OPPORTUNITY'}
+          </h1>
+          <p className="text-sm font-semibold uppercase tracking-widest text-content-muted">
+            Define role parameters and eligibility requirements.
+          </p>
+        </div>
+        <Button variant="ghost" onClick={() => navigate('/recruiter/jobs')}>
+          CANCEL OPERATION
+        </Button>
+      </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
-            {error}
-          </div>
-        )}
+      {error && (
+        <div className="p-6 border border-status-danger bg-status-danger/10 text-status-danger text-xs font-bold uppercase tracking-widest flex items-center gap-4">
+          <AlertTriangle className="w-5 h-5" />
+          {error}
+        </div>
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Job Title *</label>
-            <input
-              type="text"
-              name="title"
-              required
-              minLength={5}
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-              placeholder="e.g. Software Engineer"
-            />
-          </div>
+      {isEditing && (
+        <div className="p-6 border border-status-warning bg-status-warning/10 text-status-warning text-xs font-bold uppercase tracking-widest flex items-center gap-4">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          Note: Modifying this opportunity will reset its status to PENDING and require administrative approval again.
+        </div>
+      )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-            <textarea
-              name="description"
-              required
-              minLength={20}
-              rows={5}
-              value={formData.description}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-              placeholder="Minimum 20 characters..."
-            ></textarea>
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Minimum CGPA</label>
-              <input
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <BriefcaseBusiness className="w-5 h-5" />
+                Role Definition
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Input
+                label="Opportunity Title"
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
+                required
+                placeholder="e.g. Senior Software Engineer"
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Select
+                  label="Classification"
+                  value={formData.jobType}
+                  onChange={(e) => setFormData({...formData, jobType: e.target.value})}
+                  options={[
+                    { value: 'FULL_TIME', label: 'Full Time' },
+                    { value: 'INTERNSHIP', label: 'Internship' }
+                  ]}
+                />
+                <Input
+                  label="Location"
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  required
+                  placeholder="e.g. Bangalore, Remote"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                  label="Compensation (Optional)"
+                  value={formData.salary}
+                  onChange={(e) => setFormData({...formData, salary: e.target.value})}
+                  placeholder="e.g. ₹15 LPA"
+                />
+                <Input
+                  label="Application Deadline"
+                  type="date"
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({...formData, deadline: e.target.value})}
+                  required
+                />
+              </div>
+
+              <Textarea
+                label="Role Description"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                required
+                rows={5}
+                placeholder="Detail the responsibilities and scope of this role..."
+              />
+
+              <Textarea
+                label="Requirements & Skills"
+                value={formData.requirements}
+                onChange={(e) => setFormData({...formData, requirements: e.target.value})}
+                required
+                rows={4}
+                placeholder="List required skills, technologies, and experience..."
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <Users className="w-5 h-5" />
+                Eligibility Parameters
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <Input
+                label="Minimum CGPA Requirement"
                 type="number"
-                name="minCgpa"
                 step="0.01"
                 min="0"
                 max="10"
-                value={formData.minCgpa}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                value={formData.cgpaRequired}
+                onChange={(e) => setFormData({...formData, cgpaRequired: e.target.value})}
+                required
                 placeholder="e.g. 7.5"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Openings</label>
-              <input
-                type="number"
-                name="openings"
-                min="1"
-                value={formData.openings}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                placeholder="e.g. 5"
-              />
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Eligible Departments * (Comma separated)</label>
-            <input
-              type="text"
-              name="departments"
-              required
-              value={formData.departments}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-              placeholder="e.g. CS, IT, ECE"
-            />
-          </div>
+              <div>
+                <label className="block text-xs font-semibold text-content uppercase tracking-wider mb-4">
+                  Target Departments / Branches
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {branches.map(branch => {
+                    const isSelected = formData.allowedBranches.includes(branch);
+                    return (
+                      <div
+                        key={branch}
+                        onClick={() => handleBranchToggle(branch)}
+                        className={`cursor-pointer px-4 py-3 border text-center transition-colors text-xs font-bold uppercase tracking-widest ${
+                          isSelected
+                            ? 'bg-inverted text-content-inverted border-inverted'
+                            : 'bg-surface text-content-muted border-border-light hover:border-border-dark'
+                        }`}
+                      >
+                        {branch}
+                      </div>
+                    );
+                  })}
+                </div>
+                {formData.allowedBranches.length === 0 && (
+                  <p className="mt-3 text-xs text-status-warning font-semibold uppercase tracking-widest">
+                    ⚠ Select at least one department to target this opportunity.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Eligible Graduation Years * (Comma separated)</label>
-            <input
-              type="text"
-              name="graduationYears"
-              required
-              value={formData.graduationYears}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-              placeholder="e.g. 2027, 2028"
-            />
-          </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Application Deadline *</label>
-            <input
-              type="date"
-              name="deadline"
-              required
-              value={formData.deadline}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-
-          <div className="flex justify-end pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={() => navigate('/recruiter/jobs')}
-              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 mr-4"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 disabled:opacity-50"
-            >
-              {loading ? 'Saving...' : (isEdit ? 'Update Job' : 'Post Job')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </RecruiterLayout>
+        <div className="flex justify-end pt-8 border-t border-border-dark">
+          <Button
+            type="submit"
+            variant="inverted"
+            size="lg"
+            loading={saving}
+            disabled={formData.allowedBranches.length === 0}
+          >
+            {isEditing ? 'COMMIT MODIFICATIONS' : 'INITIALIZE OPPORTUNITY'}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
-};
-
-export default RecruiterJobForm;
+}
