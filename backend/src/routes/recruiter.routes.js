@@ -1,7 +1,7 @@
 const express = require('express');
 const { authenticate, authorizeRoles } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../validators/auth.validator');
-const { jobSchema, applicationStatusSchema, applicationNotesSchema } = require('../validators/recruiter.validator');
+const { jobSchema, applicationStatusSchema, applicationNotesSchema, companySchema } = require('../validators/recruiter.validator');
 const recruiterController = require('../controllers/recruiter.controller');
 
 const router = express.Router();
@@ -16,8 +16,15 @@ router.get('/test', (req, res) => {
 // Dashboard
 router.get('/dashboard-stats', recruiterController.getDashboardStats);
 
-// Profile
+// Profile & Company
 router.get('/profile', recruiterController.getProfile);
+router.get('/company', recruiterController.getCompany);
+router.post('/company', validateRequest(companySchema), recruiterController.createCompany);
+router.patch('/company', validateRequest(companySchema), recruiterController.updateCompany);
+
+// Notifications
+router.get('/notifications', recruiterController.getNotifications);
+router.patch('/notifications/:id/read', recruiterController.markNotificationRead);
 
 // Jobs
 router.get('/jobs', recruiterController.getJobs);

@@ -8,7 +8,18 @@ exports.jobSchema = z.object({
     departments: z.array(z.string()).min(1, 'At least one department is required'),
     graduationYears: z.array(z.number()).min(1, 'At least one graduation year is required'),
     deadline: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid deadline date' }),
-    openings: z.number().min(1).optional().nullable()
+    openings: z.number().min(1).optional().nullable(),
+    employmentType: z.enum(['FULL_TIME', 'INTERNSHIP', 'PART_TIME', 'CONTRACT']).optional()
+  })
+});
+
+exports.companySchema = z.object({
+  body: z.object({
+    name: z.string().min(2, 'Company name must be at least 2 characters'),
+    description: z.string().optional().nullable(),
+    website: z.string().url('Invalid website URL').optional().nullable(),
+    industry: z.string().optional().nullable(),
+    location: z.string().optional().nullable()
   })
 });
 
