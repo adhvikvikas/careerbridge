@@ -37,6 +37,18 @@ async function main() {
         create: {
           name: 'John Recruiter',
           phone: '1234567890',
+          companies: {
+            create: [
+              {
+                name: 'CareerBridge Technologies',
+                description: 'A leading tech company',
+                website: 'https://careerbridge.tech',
+                industry: 'Technology',
+                location: 'San Francisco, CA',
+                status: 'PENDING'
+              }
+            ]
+          }
         }
       }
     },
