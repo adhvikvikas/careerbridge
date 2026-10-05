@@ -13,10 +13,12 @@ import AdminAuditLogs from './pages/admin/AdminAuditLogs';
 import RecruiterLayout from './components/RecruiterLayout';
 import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
 import RecruiterProfile from './pages/recruiter/RecruiterProfile';
+import RecruiterCompany from './pages/recruiter/RecruiterCompany';
 import RecruiterJobs from './pages/recruiter/RecruiterJobs';
 import RecruiterJobForm from './pages/recruiter/RecruiterJobForm';
 import RecruiterApplications from './pages/recruiter/RecruiterApplications';
 import RecruiterApplicationDetails from './pages/recruiter/RecruiterApplicationDetails';
+import RecruiterNotifications from './pages/recruiter/RecruiterNotifications';
 
 import StudentLayout from './components/StudentLayout';
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -225,7 +227,7 @@ export default function App() {
           <Route path="/recruiter" element={<ProtectedRoute allowedRole="RECRUITER"><RecruiterLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/recruiter/dashboard" replace />} />
             <Route path="dashboard" element={<RecruiterDashboard />} />
-            <Route path="company" element={<div className="p-8"><h1 className="text-2xl font-bold">Company Placeholder</h1></div>} />
+            <Route path="company" element={<RecruiterCompany />} />
             <Route path="profile" element={<RecruiterProfile />} />
             <Route path="jobs" element={<RecruiterJobs />} />
             <Route path="jobs/new" element={<RecruiterJobForm />} />
@@ -233,7 +235,7 @@ export default function App() {
             <Route path="jobs/:id/applications" element={<RecruiterApplications />} />
             <Route path="applicants" element={<div className="p-8"><h1 className="text-2xl font-bold">Applicants Placeholder</h1></div>} />
             <Route path="applications/:id" element={<RecruiterApplicationDetails />} />
-            <Route path="notifications" element={<div className="p-8"><h1 className="text-2xl font-bold">Notifications Placeholder</h1></div>} />
+            <Route path="notifications" element={<RecruiterNotifications />} />
           </Route>
 
           {/* Student Routes */}

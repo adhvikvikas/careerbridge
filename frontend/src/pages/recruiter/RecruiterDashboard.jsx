@@ -6,6 +6,7 @@ import { LoadingState, ErrorState } from '../../components/ui/States';
 import { Link } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { ArrowRight, AlertTriangle } from 'lucide-react';
+import { Card } from '../../components/ui/Card';
 
 export default function RecruiterDashboard() {
   const { user } = useAuth();
@@ -16,7 +17,7 @@ export default function RecruiterDashboard() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const response = await api.get('/recruiter/dashboard');
+        const response = await api.get('/recruiter/dashboard-stats');
         setData(response.data);
       } catch (err) {
         setError('Failed to load dashboard data.');
@@ -34,46 +35,53 @@ export default function RecruiterDashboard() {
   const isApproved = companyStatus === 'APPROVED';
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-8">
 
       {/* Profile Status Alert */}
       {companyStatus !== 'APPROVED' && (
-        <div className={`p-8 border-2 flex items-start gap-6 ${companyStatus === 'PENDING' ? 'border-status-warning bg-status-warning/5' : 'border-status-danger bg-status-danger/5'}`}>
-          <AlertTriangle className={`w-10 h-10 shrink-0 ${companyStatus === 'PENDING' ? 'text-status-warning' : 'text-status-danger'}`} />
-          <div>
-            <h3 className={`text-xl font-bold uppercase tracking-tight mb-2 ${companyStatus === 'PENDING' ? 'text-status-warning' : 'text-status-danger'}`}>
-              Account Status: {companyStatus}
-            </h3>
-            <p className="text-sm font-semibold uppercase tracking-widest text-content-muted leading-relaxed">
-              {companyStatus === 'PENDING'
-                ? 'Your company profile is under administrative review. You may create job postings, but they will not be visible to students until your profile is approved.'
-                : `Your company profile was rejected. Reason: ${companyRejectionReason || 'No reason provided.'}. Please update your profile.`}
-            </p>
-            {companyStatus === 'REJECTED' && (
-              <Button variant="outline-inverted" className="mt-6" onClick={() => window.location.href='/recruiter/profile'}>
-                UPDATE PROFILE
-              </Button>
-            )}
+        <div className={`p-6 rounded-2xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-6 ${
+          companyStatus === 'PENDING' ? 'border-status-warning/30 bg-status-warning/10' : 'border-status-danger/30 bg-status-danger/10'
+        }`}>
+          <div className="flex items-start gap-4">
+            <AlertTriangle className={`w-8 h-8 shrink-0 mt-1 ${companyStatus === 'PENDING' ? 'text-status-warning' : 'text-status-danger'}`} />
+            <div>
+              <h3 className={`text-lg font-bold mb-1 ${companyStatus === 'PENDING' ? 'text-status-warning' : 'text-status-danger'}`}>
+                Account Status: {companyStatus}
+              </h3>
+              <p className="text-sm font-medium text-content-muted leading-relaxed max-w-3xl">
+                {companyStatus === 'PENDING'
+                  ? 'Your company profile is under administrative review. You may create job postings, but they will not be visible to students until your profile is approved.'
+                  : `Your company profile was rejected. Reason: ${companyRejectionReason || 'No reason provided.'}. Please update your profile.`}
+              </p>
+            </div>
           </div>
+          {companyStatus === 'REJECTED' && (
+            <Button variant="outline" className="shrink-0 whitespace-nowrap" onClick={() => window.location.href='/recruiter/company'}>
+              Update Company Profile
+            </Button>
+          )}
         </div>
       )}
 
       {/* Hero Header */}
-      <div className="bg-inverted text-content-inverted p-12 lg:p-24 relative overflow-hidden border border-border-dark flex flex-col md:flex-row md:items-end justify-between gap-12">
-        <div className="absolute inset-0 grid-lines-dark opacity-40 pointer-events-none mix-blend-overlay z-0"></div>
+      <div className="bg-surface p-8 md:p-12 rounded-2xl shadow-sm border border-border-light flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
         <div className="relative z-10">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-accent mb-6 border-l-2 border-accent pl-3">
+          <div className="text-xs font-semibold text-primary mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
             Recruiter Interface Active
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-none mb-6">
-            COMMAND CENTER<br/>
-            <span className="text-content-inverted-muted">{user.email}</span>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-content mb-3">
+            Command Center
           </h1>
+          <p className="text-sm font-medium text-content-muted">
+            Manage your opportunities and review candidates. Logged in as <span className="font-semibold text-content">{user.email}</span>
+          </p>
         </div>
         <div className="relative z-10 shrink-0">
           <Link to="/recruiter/jobs/new">
-            <Button variant="accent" size="lg" disabled={!isApproved}>
-              POST OPPORTUNITY <ArrowRight className="w-5 h-5 ml-2" />
+            <Button variant="primary" size="lg" disabled={!isApproved}>
+              Post Opportunity <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </Link>
         </div>
@@ -81,43 +89,41 @@ export default function RecruiterDashboard() {
 
       {/* Metrics */}
       <div>
-        <h3 className="text-sm font-bold uppercase tracking-widest text-content-muted mb-6">Pipeline Telemetry</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 border border-border-light bg-surface">
-          <div className="p-8 border-b sm:border-b-0 sm:border-r border-border-light hover:bg-base transition-colors group">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-8 group-hover:text-inverted transition-colors">Active Opportunities</p>
-            <h3 className="text-5xl font-bold tracking-tighter">{stats.activeJobs}</h3>
-          </div>
-
-          <div className="p-8 border-b sm:border-b-0 sm:border-r border-border-light hover:bg-base transition-colors group">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-8 group-hover:text-inverted transition-colors">Pending Opportunities</p>
-            <h3 className="text-5xl font-bold tracking-tighter">{stats.pendingJobs}</h3>
-          </div>
-
-          <div className="p-8 hover:bg-base transition-colors group">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-8 group-hover:text-inverted transition-colors">Total Applicants</p>
-            <h3 className="text-5xl font-bold tracking-tighter">{stats.totalApplicants}</h3>
-          </div>
+        <h3 className="text-lg font-semibold text-content mb-4">Pipeline Telemetry</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <Card className="p-6">
+            <p className="text-sm font-medium text-content-muted mb-2">Active Opportunities</p>
+            <h3 className="text-4xl font-bold text-content">{stats.activeJobs}</h3>
+          </Card>
+          <Card className="p-6">
+            <p className="text-sm font-medium text-content-muted mb-2">Pending Opportunities</p>
+            <h3 className="text-4xl font-bold text-content">{stats.pendingJobs}</h3>
+          </Card>
+          <Card className="p-6">
+            <p className="text-sm font-medium text-content-muted mb-2">Total Applicants</p>
+            <h3 className="text-4xl font-bold text-content">{stats.totalApplicants}</h3>
+          </Card>
         </div>
       </div>
 
       {/* Recent Jobs */}
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-content-muted">Recent Postings</h3>
-          <Link to="/recruiter/jobs" className="text-xs font-bold uppercase tracking-widest text-inverted hover:underline">
-            View Pipeline
+      <Card>
+        <div className="flex items-center justify-between p-6 border-b border-border-light bg-base/50 rounded-t-2xl">
+          <h3 className="text-base font-bold text-content">Recent Postings</h3>
+          <Link to="/recruiter/jobs" className="text-sm font-medium text-primary hover:underline">
+            View All
           </Link>
         </div>
-        <div className="border border-border-light bg-surface divide-y divide-border-light">
+        <div className="divide-y divide-border-light">
           {recentJobs?.length === 0 ? (
-            <div className="p-12 text-center text-xs font-bold uppercase tracking-widest text-content-muted">NO OPPORTUNITIES POSTED.</div>
+            <div className="p-12 text-center text-sm font-medium text-content-muted">No opportunities posted.</div>
           ) : (
             recentJobs?.map(job => (
-              <div key={job.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-base transition-colors">
+              <div key={job.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-base/50 transition-colors">
                 <div>
-                  <h4 className="text-lg font-bold tracking-tight uppercase">{job.title}</h4>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-content-muted mt-2">
-                    {job.jobType} <span className="mx-2">/</span> Created {new Date(job.createdAt).toLocaleDateString()}
+                  <h4 className="text-lg font-bold text-content">{job.title}</h4>
+                  <p className="text-sm font-medium text-content-muted mt-1">
+                    {job.jobType.replace('_', ' ')} &bull; Created {new Date(job.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="shrink-0">
@@ -127,7 +133,7 @@ export default function RecruiterDashboard() {
             ))
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

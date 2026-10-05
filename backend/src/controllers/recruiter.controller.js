@@ -434,3 +434,166 @@ exports.getDashboardStats = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
+
+// Update recruiter profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, phone } = req.body;
+
+    const profile = await prisma.recruiterProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ success: false, message: 'Recruiter profile not found' });
+    }
+
+    const updatedProfile = await prisma.recruiterProfile.update({
+      where: { userId },
+      data: { name, phone }
+    });
+
+    res.json({ success: true, profile: updatedProfile });
+  } catch (error) {
+    console.error('Error updating recruiter profile:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// Create recruiter company
+exports.createCompany = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, description, website, industry, location } = req.body;
+
+    const profile = await prisma.recruiterProfile.findUnique({
+      where: { userId },
+      include: { companies: true }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ success: false, message: 'Recruiter profile not found' });
+    }
+
+    if (profile.companies && profile.companies.length > 0) {
+      return res.status(409).json({ success: false, message: 'Company already exists for this recruiter' });
+    }
+
+    const company = await prisma.company.create({
+      data: {
+        name,
+        description,
+        website,
+        industry,
+        location,
+        status: 'PENDING',
+        recruiterId: profile.id
+      }
+    });
+
+    res.status(201).json({ success: true, company });
+  } catch (error) {
+    console.error('Error creating company:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// Update recruiter company
+exports.updateCompany = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, description, website, industry, location } = req.body;
+
+    const profile = await prisma.recruiterProfile.findUnique({
+      where: { userId },
+      include: { companies: true }
+    });
+
+    if (!profile || !profile.companies || profile.companies.length === 0) {
+      return res.status(404).json({ success: false, message: 'Company not found' });
+    }
+
+    const companyId = profile.companies[0].id;
+
+    // Reset status to PENDING if it was REJECTED, otherwise keep existing status (or PENDING)
+    const currentStatus = profile.companies[0].status;
+    const newStatus = (currentStatus === 'REJECTED') ? 'PENDING' : currentStatus;
+
+    const company = await prisma.company.update({
+      where: { id: companyId },
+      data: {
+        name,
+        description,
+        website,
+        industry,
+        location,
+        status: newStatus,
+        rejectionReason: newStatus === 'PENDING' ? null : profile.companies[0].rejectionReason
+      }
+    });
+
+    res.json({ success: true, company });
+  } catch (error) {
+    console.error('Error updating company:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// Get recruiter notifications
+exports.getNotifications = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const notifications = await prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ success: true, notifications });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// Mark notification as read
+exports.markNotificationRead = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    const notification = await prisma.notification.findUnique({
+      where: { id }
+    });
+
+    if (!notification || notification.userId !== userId) {
+      return res.status(404).json({ success: false, message: 'Notification not found' });
+    }
+
+    const updatedNotification = await prisma.notification.update({
+      where: { id },
+      data: { readAt: new Date() }
+    });
+
+    res.json({ success: true, notification: updatedNotification });
+  } catch (error) {
+    console.error('Error marking notification read:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// Mark all notifications as read
+exports.markAllNotificationsRead = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    await prisma.notification.updateMany({
+      where: { userId, readAt: null },
+      data: { readAt: new Date() }
+    });
+
+    res.json({ success: true, message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('Error marking all notifications read:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};

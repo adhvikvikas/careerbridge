@@ -45,20 +45,26 @@ describe('Recruiter Portal API', () => {
     const aRes = await request(app).post('/api/auth/login').send({ email: 'admin@example.com', password: 'password123' });
     adminToken = aRes.body.token;
 
-    // Reset data
-    await prisma.applicationStatusHistory.deleteMany({});
-    await prisma.application.deleteMany({});
-    await prisma.jobPosting.deleteMany({});
-    await prisma.company.deleteMany({});
-
-    // Setup basic companies
-    company1 = await prisma.company.create({
-      data: { name: 'Company One', recruiterId: recruiter1Id, status: 'APPROVED' }
-    });
+    // Instead of deleting everything, just find the existing company for recruiter1
+    // created by seed, or create one if it doesn't exist.
+    const r1Company = await prisma.company.findFirst({ where: { recruiterId: recruiter1Id } });
+    if (!r1Company) {
+      company1 = await prisma.company.create({
+        data: { name: 'Test Company', recruiterId: recruiter1Id, status: 'APPROVED' }
+      });
+    } else {
+      company1 = r1Company;
+    }
     
-    company2 = await prisma.company.create({
-      data: { name: 'Company Two', recruiterId: recruiter2Id, status: 'APPROVED' }
-    });
+    // Create company for recruiter 2 if not exists
+    const r2Company = await prisma.company.findFirst({ where: { recruiterId: recruiter2Id } });
+    if (!r2Company) {
+      company2 = await prisma.company.create({
+        data: { name: 'Company Two', recruiterId: recruiter2Id, status: 'APPROVED' }
+      });
+    } else {
+      company2 = r2Company;
+    }
   });
 
   afterAll(async () => {
@@ -84,7 +90,7 @@ describe('Recruiter Portal API', () => {
     it('recruiter → recruiter endpoint → allowed (200)', async () => {
       const res = await request(app).get('/api/recruiter/profile').set('Authorization', `Bearer ${recruiter1Token}`);
       expect(res.status).toBe(200);
-      expect(res.body.profile.companies[0].name).toBe('Company One');
+      expect(res.body.profile.companies[0].name).toBe('Test Company');
     });
   });
 

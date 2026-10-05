@@ -32,7 +32,10 @@ exports.approveCompany = async (req, res) => {
     const { id } = req.params;
     const adminId = req.user.id;
 
-    const company = await prisma.company.findUnique({ where: { id } });
+    const company = await prisma.company.findUnique({ 
+      where: { id },
+      include: { recruiter: true }
+    });
     if (!company) {
       return res.status(404).json({ success: false, message: 'Company not found' });
     }
@@ -55,6 +58,15 @@ exports.approveCompany = async (req, res) => {
           targetId: comp.id
         }
       });
+
+      await tx.notification.create({
+        data: {
+          userId: company.recruiter.userId,
+          type: 'COMPANY_APPROVED',
+          title: 'Company Approved',
+          message: `Your company ${comp.name} has been approved. You can now post jobs.`
+        }
+      });
       
       return comp;
     });
@@ -72,7 +84,10 @@ exports.rejectCompany = async (req, res) => {
     const { reason } = req.body;
     const adminId = req.user.id;
 
-    const company = await prisma.company.findUnique({ where: { id } });
+    const company = await prisma.company.findUnique({ 
+      where: { id },
+      include: { recruiter: true }
+    });
     if (!company) {
       return res.status(404).json({ success: false, message: 'Company not found' });
     }
@@ -94,6 +109,15 @@ exports.rejectCompany = async (req, res) => {
           targetType: 'COMPANY',
           targetId: comp.id,
           reason
+        }
+      });
+
+      await tx.notification.create({
+        data: {
+          userId: company.recruiter.userId,
+          type: 'COMPANY_REJECTED',
+          title: 'Company Rejected',
+          message: `Your company ${comp.name} was rejected. Reason: ${reason}`
         }
       });
       
@@ -136,7 +160,7 @@ exports.approveJob = async (req, res) => {
 
     const job = await prisma.jobPosting.findUnique({ 
       where: { id },
-      include: { company: true }
+      include: { company: { include: { recruiter: true } } }
     });
     
     if (!job) {
@@ -165,6 +189,15 @@ exports.approveJob = async (req, res) => {
           targetId: updated.id
         }
       });
+
+      await tx.notification.create({
+        data: {
+          userId: job.company.recruiter.userId,
+          type: 'JOB_APPROVED',
+          title: 'Job Approved',
+          message: `Your job posting "${updated.title}" has been approved and is now live.`
+        }
+      });
       
       return updated;
     });
@@ -182,7 +215,10 @@ exports.rejectJob = async (req, res) => {
     const { reason } = req.body;
     const adminId = req.user.id;
 
-    const job = await prisma.jobPosting.findUnique({ where: { id } });
+    const job = await prisma.jobPosting.findUnique({ 
+      where: { id },
+      include: { company: { include: { recruiter: true } } }
+    });
     if (!job) {
       return res.status(404).json({ success: false, message: 'Job not found' });
     }
@@ -204,6 +240,15 @@ exports.rejectJob = async (req, res) => {
           targetType: 'JOB',
           targetId: updated.id,
           reason
+        }
+      });
+
+      await tx.notification.create({
+        data: {
+          userId: job.company.recruiter.userId,
+          type: 'JOB_REJECTED',
+          title: 'Job Rejected',
+          message: `Your job posting "${updated.title}" was rejected. Reason: ${reason}`
         }
       });
       

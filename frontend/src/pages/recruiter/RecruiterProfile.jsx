@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { Input, Textarea } from '../../components/ui/Input';
+import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { LoadingState } from '../../components/ui/States';
-import { Building2, CheckSquare, AlertTriangle } from 'lucide-react';
+import { User, CheckSquare, AlertTriangle } from 'lucide-react';
 
 export default function RecruiterProfile() {
   const [profile, setProfile] = useState({
-    companyName: '',
-    industry: '',
-    website: '',
-    description: ''
+    name: '',
+    phone: ''
   });
 
   const [loading, setLoading] = useState(true);
@@ -27,10 +25,8 @@ export default function RecruiterProfile() {
       const response = await api.get('/recruiter/profile');
       if (response.data.profile) {
         setProfile({
-          companyName: response.data.profile.companyName || '',
-          industry: response.data.profile.industry || '',
-          website: response.data.profile.website || '',
-          description: response.data.profile.description || ''
+          name: response.data.profile.name || '',
+          phone: response.data.profile.phone || ''
         });
       }
     } catch (err) {
@@ -46,82 +42,67 @@ export default function RecruiterProfile() {
     setMessage(null);
 
     try {
-      await api.post('/recruiter/profile', profile);
-      setMessage({ type: 'success', text: 'PROFILE UPDATED AND SUBMITTED FOR REVIEW.' });
+      const response = await api.patch('/recruiter/profile', profile);
+      setProfile({
+        name: response.data.profile.name || '',
+        phone: response.data.profile.phone || ''
+      });
+      setMessage({ type: 'success', text: 'Profile updated successfully.' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'FAILED TO UPDATE PROFILE.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to update profile.' });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <LoadingState message="RETRIEVING ENTITY PROFILE..." />;
+  if (loading) return <LoadingState message="LOADING PROFILE..." />;
 
   return (
-    <div className="space-y-12 max-w-4xl">
-      <div className="border-b border-border-dark pb-12">
-        <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4">CORPORATE ENTITY PROFILE</h1>
-        <p className="text-sm font-semibold uppercase tracking-widest text-content-muted">Manage your organization's identity within the platform.</p>
+    <div className="space-y-8 max-w-4xl mx-auto">
+      <div className="pb-6 border-b border-border-light">
+        <h1 className="text-3xl font-bold tracking-tight text-content mb-2">Personal Profile</h1>
+        <p className="text-sm font-medium text-content-muted">Manage your personal recruiter contact details.</p>
       </div>
 
       {message && (
-        <div className={`p-6 border text-xs font-bold uppercase tracking-widest flex items-center gap-4 ${
-          message.type === 'success' ? 'bg-status-success/10 border-status-success text-status-success' : 'bg-status-danger/10 border-status-danger text-status-danger'
+        <div className={`p-4 rounded-xl border text-sm font-medium flex items-center gap-3 ${
+          message.type === 'success' ? 'bg-status-success/10 border-status-success/20 text-status-success' : 'bg-status-danger/10 border-status-danger/20 text-status-danger'
         }`}>
-          {message.type === 'success' ? <CheckSquare className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+          {message.type === 'success' ? <CheckSquare className="w-5 h-5 shrink-0" /> : <AlertTriangle className="w-5 h-5 shrink-0" />}
           {message.text}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-12">
+      <form onSubmit={handleSubmit} className="space-y-8">
         <Card>
-          <CardHeader>
+          <CardHeader className="border-b border-border-light bg-base/50">
             <CardTitle className="flex items-center gap-3">
-              <Building2 className="w-5 h-5" />
-              Entity Configuration
+              <User className="w-5 h-5 text-content-muted" />
+              Contact Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-8">
-            <Input
-              label="Entity Name"
-              value={profile.companyName}
-              onChange={(e) => setProfile({...profile, companyName: e.target.value})}
-              required
-              placeholder="e.g. Acme Corp"
-            />
-
+          <CardContent className="pt-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
-                label="Sector / Industry"
-                value={profile.industry}
-                onChange={(e) => setProfile({...profile, industry: e.target.value})}
+                label="Full Name"
+                value={profile.name}
+                onChange={(e) => setProfile({...profile, name: e.target.value})}
                 required
-                placeholder="e.g. Technology"
+                placeholder="e.g. John Doe"
               />
               <Input
-                label="Domain / Website"
-                type="url"
-                value={profile.website}
-                onChange={(e) => setProfile({...profile, website: e.target.value})}
-                required
-                placeholder="https://..."
+                label="Phone Number"
+                value={profile.phone}
+                onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                placeholder="e.g. +91 98765 43210"
               />
             </div>
-
-            <Textarea
-              label="Entity Description"
-              value={profile.description}
-              onChange={(e) => setProfile({...profile, description: e.target.value})}
-              required
-              rows={6}
-              placeholder="Provide a comprehensive overview of the organization..."
-            />
           </CardContent>
         </Card>
 
-        <div className="flex justify-end pt-8 border-t border-border-dark">
-          <Button type="submit" variant="inverted" size="lg" loading={saving}>
-            COMMIT PROFILE CHANGES
+        <div className="flex justify-end pt-6">
+          <Button type="submit" variant="primary" size="lg" loading={saving}>
+            Save Changes
           </Button>
         </div>
       </form>
