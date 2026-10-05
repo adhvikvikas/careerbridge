@@ -11,16 +11,14 @@ export const Button = ({
   icon,
   ...props
 }) => {
-  const baseStyle = "inline-flex items-center justify-center font-semibold transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-xs border border-transparent";
+  const baseStyle = "inline-flex items-center justify-center font-medium rounded-md transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed text-sm border border-transparent shadow-sm";
 
   const variants = {
-    primary: "bg-inverted text-content-inverted hover:bg-inverted/90",
+    primary: "bg-primary text-white hover:bg-primary-hover",
     secondary: "bg-surface text-content border-border-light hover:bg-base",
-    accent: "bg-accent text-inverted hover:bg-accent-hover",
-    danger: "bg-status-danger text-white hover:bg-red-600",
-    ghost: "bg-transparent text-content-muted hover:text-content border-transparent hover:border-border-light",
-    inverted: "bg-white text-inverted hover:bg-gray-100",
-    'outline-inverted': "bg-transparent text-content-inverted border-border-dark hover:border-content-inverted"
+    danger: "bg-status-danger text-white hover:opacity-90",
+    ghost: "bg-transparent text-content-muted hover:text-content hover:bg-base shadow-none",
+    outline: "bg-transparent text-content border-border-light hover:border-border-dark"
   };
 
   const sizes = {

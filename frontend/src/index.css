@@ -1,28 +1,28 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", sans-serif;
+  --font-sans: "Inter", "Geist", "Plus Jakarta Sans", sans-serif;
 
   /* Foundation Colors */
-  --color-base: #f4f4f5; /* zinc-100 */
-  --color-surface: #ffffff;
-  --color-inverted: #09090b; /* zinc-950 */
-  --color-inverted-surface: #18181b; /* zinc-900 */
+  --color-base: #f8fafc; /* slate-50 - light neutral background */
+  --color-surface: #ffffff; /* white surfaces */
+  --color-inverted: #0f172a; /* deep navy */
+  --color-inverted-surface: #1e293b; /* slate-800 */
 
-  /* Accent: Electric Lime */
-  --color-accent: #caff04;
-  --color-accent-hover: #b5e600;
+  /* Primary: Indigo/Blue */
+  --color-primary: #4f46e5; /* indigo-600 */
+  --color-primary-hover: #4338ca; /* indigo-700 */
 
   /* Text Colors */
-  --color-content: #09090b;
-  --color-content-muted: #71717a; /* zinc-500 */
+  --color-content: #0f172a; /* dark text */
+  --color-content-muted: #64748b; /* slate muted text */
   --color-content-inverted: #ffffff;
-  --color-content-inverted-muted: #a1a1aa; /* zinc-400 */
+  --color-content-inverted-muted: #94a3b8; /* slate-400 */
 
   /* Borders */
-  --color-border-light: #e4e4e7; /* zinc-200 */
-  --color-border-dark: #27272a; /* zinc-800 */
-  --color-border-strong: #09090b;
+  --color-border-light: #e2e8f0; /* slate-200 */
+  --color-border-dark: #334155; /* slate-700 */
+  --color-border-strong: #0f172a; /* slate-900 */
 
   /* Status */
   --color-status-success: #10b981; /* emerald-500 */
@@ -33,7 +33,7 @@
 
 @layer base {
   body {
-    @apply bg-base text-content font-sans antialiased selection:bg-accent selection:text-inverted;
+    @apply bg-base text-content font-sans antialiased selection:bg-primary selection:text-white;
   }
 
   /* Thin grid lines effect utilities */

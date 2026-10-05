@@ -4,7 +4,7 @@ export const Input = forwardRef(({ label, error, className = '', icon, ...props 
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-xs font-semibold text-content uppercase tracking-wider mb-2">
+        <label className="block text-sm font-medium text-content mb-1.5">
           {label}
         </label>
       )}
@@ -16,10 +16,10 @@ export const Input = forwardRef(({ label, error, className = '', icon, ...props 
         )}
         <input
           ref={ref}
-          className={`w-full ${icon ? 'pl-10' : 'px-4'} py-3 bg-surface border text-sm transition-colors
-            focus:outline-none focus:border-inverted
+          className={`w-full ${icon ? 'pl-10' : 'px-4'} py-2.5 bg-surface border text-sm rounded-md transition-colors
+            focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
             disabled:bg-base disabled:text-content-muted
-            ${error ? 'border-status-danger' : 'border-border-light'}
+            ${error ? 'border-status-danger focus:ring-status-danger focus:border-status-danger' : 'border-border-light hover:border-border-dark'}
             ${className}
           `}
           {...props}
@@ -36,16 +36,16 @@ export const Textarea = forwardRef(({ label, error, className = '', ...props }, 
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-xs font-semibold text-content uppercase tracking-wider mb-2">
+        <label className="block text-sm font-medium text-content mb-1.5">
           {label}
         </label>
       )}
       <textarea
         ref={ref}
-        className={`w-full px-4 py-3 bg-surface border text-sm transition-colors resize-y
-          focus:outline-none focus:border-inverted
+        className={`w-full px-4 py-2.5 bg-surface border text-sm rounded-md transition-colors resize-y
+          focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
           disabled:bg-base disabled:text-content-muted
-          ${error ? 'border-status-danger' : 'border-border-light'}
+          ${error ? 'border-status-danger focus:ring-status-danger focus:border-status-danger' : 'border-border-light hover:border-border-dark'}
           ${className}
         `}
         {...props}
@@ -61,16 +61,16 @@ export const Select = forwardRef(({ label, error, options = [], className = '', 
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-xs font-semibold text-content uppercase tracking-wider mb-2">
+        <label className="block text-sm font-medium text-content mb-1.5">
           {label}
         </label>
       )}
       <select
         ref={ref}
-        className={`w-full px-4 py-3 bg-surface border text-sm transition-colors appearance-none
-          focus:outline-none focus:border-inverted
+        className={`w-full px-4 py-2.5 bg-surface border text-sm rounded-md transition-colors
+          focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
           disabled:bg-base disabled:text-content-muted
-          ${error ? 'border-status-danger' : 'border-border-light'}
+          ${error ? 'border-status-danger focus:ring-status-danger focus:border-status-danger' : 'border-border-light hover:border-border-dark'}
           ${className}
         `}
         {...props}

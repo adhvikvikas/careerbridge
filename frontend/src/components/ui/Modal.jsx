@@ -13,9 +13,9 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
       />
 
       {/* Modal Dialog */}
-      <div className="bg-surface border border-border-light w-full max-w-lg z-10 flex flex-col shadow-2xl relative">
+      <div className="bg-surface border border-border-light rounded-xl w-full max-w-lg z-10 flex flex-col shadow-2xl relative">
         <div className="flex justify-between items-center px-8 py-6 border-b border-border-light">
-          <h3 className="text-xl font-bold tracking-tight text-content uppercase">{title}</h3>
+          <h3 className="text-xl font-semibold text-content">{title}</h3>
           <button
             onClick={onClose}
             className="text-content-muted hover:text-content transition-colors absolute top-6 right-6"

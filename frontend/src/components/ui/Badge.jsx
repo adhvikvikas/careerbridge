@@ -2,9 +2,8 @@ import React from 'react';
 
 export const Badge = ({ children, variant = 'default', className = '' }) => {
   const variants = {
-    default: 'bg-base text-content border-border-light',
-    primary: 'bg-inverted text-content-inverted border-transparent',
-    accent: 'bg-accent text-inverted border-transparent',
+    default: 'bg-base text-content-muted border-border-light',
+    primary: 'bg-primary/10 text-primary border-primary/20',
     success: 'bg-status-success/10 text-status-success border-status-success/20',
     warning: 'bg-status-warning/10 text-status-warning border-status-warning/20',
     danger: 'bg-status-danger/10 text-status-danger border-status-danger/20',
@@ -12,7 +11,7 @@ export const Badge = ({ children, variant = 'default', className = '' }) => {
   };
 
   return (
-    <span className={`inline-flex items-center px-2 py-1 text-[10px] font-bold uppercase tracking-widest border ${variants[variant]} ${className}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${variants[variant]} ${className}`}>
       {children}
     </span>
   );
@@ -26,7 +25,7 @@ export const StatusBadge = ({ status }) => {
     APPLIED: { variant: 'info', label: 'Applied' },
     UNDER_REVIEW: { variant: 'warning', label: 'Reviewing' },
     SHORTLISTED: { variant: 'primary', label: 'Shortlisted' },
-    INTERVIEW: { variant: 'accent', label: 'Interview' },
+    INTERVIEW: { variant: 'primary', label: 'Interview' },
     SELECTED: { variant: 'success', label: 'Selected' },
   };
 

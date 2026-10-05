@@ -1,7 +1,7 @@
 import React from 'react';
 
 export const Table = ({ children, className = '' }) => (
-  <div className={`w-full overflow-x-auto border border-border-light bg-surface ${className}`}>
+  <div className={`w-full overflow-x-auto border border-border-light bg-surface rounded-xl shadow-sm ${className}`}>
     <table className="w-full text-sm text-left whitespace-nowrap">
       {children}
     </table>
@@ -9,7 +9,7 @@ export const Table = ({ children, className = '' }) => (
 );
 
 export const TableHeader = ({ children, className = '' }) => (
-  <thead className={`text-[10px] font-bold text-content-muted uppercase tracking-wider border-b border-border-light bg-base ${className}`}>
+  <thead className={`text-xs font-semibold text-content-muted border-b border-border-light bg-base ${className}`}>
     {children}
   </thead>
 );
