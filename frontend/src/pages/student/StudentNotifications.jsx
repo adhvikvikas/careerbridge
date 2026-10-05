@@ -49,22 +49,22 @@ export default function StudentNotifications() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <div className="space-y-12 max-w-5xl">
-      <div className="border-b border-border-dark pb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="space-y-8 max-w-4xl">
+      <div className="pb-6 border-b border-border-light flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4 flex items-center gap-4">
-            SYSTEM ALERTS
+          <h1 className="text-3xl font-bold tracking-tight text-content mb-2 flex items-center gap-3">
+            Notifications
             {unreadCount > 0 && (
-              <span className="bg-accent text-inverted text-[10px] px-3 py-1 font-bold tracking-widest border border-inverted">
-                {unreadCount} UNREAD
+              <span className="bg-primary text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                {unreadCount} new
               </span>
             )}
           </h1>
-          <p className="text-sm font-semibold uppercase tracking-widest text-content-muted">Updates regarding your applications and profile.</p>
+          <p className="text-sm font-medium text-content-muted">Updates regarding your applications and profile.</p>
         </div>
         {unreadCount > 0 && (
-          <Button variant="outline-inverted" onClick={markAllAsRead} icon={<CheckSquare className="w-4 h-4" />}>
-            ACKNOWLEDGE ALL
+          <Button variant="outline" onClick={markAllAsRead} icon={<CheckSquare className="w-4 h-4" />}>
+            Mark All as Read
           </Button>
         )}
       </div>
@@ -72,32 +72,32 @@ export default function StudentNotifications() {
       {notifications.length === 0 ? (
         <EmptyState
           icon={<Bell className="w-10 h-10" />}
-          title="NO ALERTS DETECTED"
+          title="No Notifications Found"
           description="Your notification center is currently empty."
         />
       ) : (
-        <div className="border border-border-light bg-surface divide-y divide-border-light">
+        <div className="bg-surface border border-border-light rounded-2xl overflow-hidden shadow-sm divide-y divide-border-light">
           {notifications.map(notif => (
             <div
               key={notif.id}
-              className={`p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 transition-colors ${!notif.isRead ? 'bg-inverted text-content-inverted' : 'hover:bg-base'}`}
+              className={`p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6 transition-colors ${!notif.isRead ? 'bg-primary/5' : 'hover:bg-base/50'}`}
             >
-              <div className="flex gap-6 items-start">
+              <div className="flex gap-4 items-start">
                 <div className="shrink-0 mt-1">
                   {notif.isRead ? (
-                    <div className="w-3 h-3 rounded-none border-2 border-content-muted" />
+                    <div className="w-2.5 h-2.5 rounded-full border border-content-muted" />
                   ) : (
-                    <div className="w-3 h-3 rounded-none bg-accent" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary" />
                   )}
                 </div>
                 <div>
-                  <h4 className={`text-lg font-bold tracking-tight uppercase ${!notif.isRead ? 'text-content-inverted' : 'text-content'}`}>
+                  <h4 className={`text-base font-bold ${!notif.isRead ? 'text-content' : 'text-content-muted'}`}>
                     {notif.title}
                   </h4>
-                  <p className={`text-sm mt-3 leading-relaxed max-w-2xl ${!notif.isRead ? 'text-content-inverted-muted' : 'text-content-muted'}`}>
+                  <p className={`text-sm mt-1 leading-relaxed ${!notif.isRead ? 'text-content' : 'text-content-muted'}`}>
                     {notif.message}
                   </p>
-                  <p className={`text-[10px] font-bold uppercase tracking-widest mt-4 ${!notif.isRead ? 'text-accent' : 'text-content-muted'}`}>
+                  <p className={`text-xs font-medium mt-2 ${!notif.isRead ? 'text-primary' : 'text-content-muted'}`}>
                     {new Date(notif.createdAt).toLocaleString()}
                   </p>
                 </div>
@@ -107,10 +107,10 @@ export default function StudentNotifications() {
                 <div className="shrink-0">
                   <Button
                     onClick={() => markAsRead(notif.id)}
-                    variant="accent"
+                    variant="ghost"
                     size="sm"
                   >
-                    ACKNOWLEDGE
+                    Mark as Read
                   </Button>
                 </div>
               )}

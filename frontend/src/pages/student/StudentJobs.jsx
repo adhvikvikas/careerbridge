@@ -43,16 +43,16 @@ export default function StudentJobs() {
   });
 
   return (
-    <div className="space-y-12">
-      <div className="border-b border-border-dark pb-12">
-        <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4">OPPORTUNITIES</h1>
-        <p className="text-sm font-semibold uppercase tracking-widest text-content-muted">Discover and apply for open positions matched to your profile.</p>
+    <div className="space-y-8">
+      <div className="pb-6 border-b border-border-light">
+        <h1 className="text-3xl font-bold tracking-tight text-content mb-2">Opportunities</h1>
+        <p className="text-sm font-medium text-content-muted">Discover and apply for open positions matched to your profile.</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 p-6 border border-border-light bg-surface">
+      <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <Input
-            icon={<Search className="w-5 h-5" />}
+            icon={<Search className="w-4 h-4" />}
             placeholder="Search roles or companies..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -65,7 +65,9 @@ export default function StudentJobs() {
             options={[
               { value: '', label: 'All Job Types' },
               { value: 'FULL_TIME', label: 'Full Time' },
-              { value: 'INTERNSHIP', label: 'Internship' }
+              { value: 'INTERNSHIP', label: 'Internship' },
+              { value: 'PART_TIME', label: 'Part Time' },
+              { value: 'CONTRACT', label: 'Contract' }
             ]}
           />
         </div>
@@ -74,60 +76,58 @@ export default function StudentJobs() {
       {filteredJobs.length === 0 ? (
         <EmptyState
           icon={<Search className="w-10 h-10" />}
-          title="NO RESULTS FOUND"
+          title="No Results Found"
           description="Adjust your search parameters to find opportunities."
           actionText="Clear Filters"
           onAction={() => { setSearchQuery(''); setTypeFilter(''); }}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredJobs.map(job => (
-            <div key={job.id} className="border border-border-light bg-surface hover:border-inverted transition-colors group flex flex-col md:flex-row">
-
-              {/* Avatar & Title Area */}
-              <div className="p-8 md:w-[40%] border-b md:border-b-0 md:border-r border-border-light flex gap-8 items-start">
-                <div className="w-16 h-16 bg-inverted flex items-center justify-center font-bold text-content-inverted text-2xl shrink-0">
-                  {job.recruiter.companyName[0].toUpperCase()}
+            <Card key={job.id} className="flex flex-col hover:border-primary/30 transition-colors h-full">
+              <div className="p-6 flex-1 flex flex-col">
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center font-bold text-xl shrink-0">
+                    {job.recruiter.companyName[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-content leading-tight group-hover:text-primary transition-colors">
+                      {job.title}
+                    </h3>
+                    <p className="text-sm font-medium text-content-muted mt-1">
+                      {job.recruiter.companyName}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold uppercase tracking-tight group-hover:text-accent transition-colors">
-                    {job.title}
-                  </h3>
-                  <p className="text-xs font-bold uppercase tracking-widest text-content-muted mt-3">
-                    {job.recruiter.companyName}
-                  </p>
+
+                <div className="grid grid-cols-2 gap-y-3 gap-x-4 mb-6 mt-auto">
+                  <div className="flex items-center gap-2 text-sm font-medium text-content">
+                    <MapPin className="w-4 h-4 text-content-muted shrink-0" /> 
+                    <span className="truncate">{job.location}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm font-medium text-content">
+                    <BriefcaseBusiness className="w-4 h-4 text-content-muted shrink-0" /> 
+                    {job.jobType.replace('_', ' ')}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm font-medium text-content">
+                    <IndianRupee className="w-4 h-4 text-content-muted shrink-0" /> 
+                    <span className="truncate">{job.salary || 'Not disclosed'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm font-medium text-content">
+                    <User className="w-4 h-4 text-content-muted shrink-0" /> 
+                    <span className="truncate">CGPA: {job.cgpaRequired || 'None'}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Metadata Area */}
-              <div className="p-8 md:w-[35%] flex flex-col justify-center border-b md:border-b-0 md:border-r border-border-light">
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-content">
-                    <MapPin className="w-4 h-4 text-content-muted" /> <span className="truncate">{job.location}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-content">
-                    <BriefcaseBusiness className="w-4 h-4 text-content-muted" /> {job.jobType}
-                  </div>
-                  <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-content">
-                    <IndianRupee className="w-4 h-4 text-content-muted" /> <span className="truncate">{job.salary || 'Not disclosed'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Area */}
-              <div className="p-8 md:w-[25%] flex flex-col justify-between items-start md:items-end bg-base group-hover:bg-inverted group-hover:text-inverted transition-colors">
-                <div className="mb-6 md:mb-0 text-left md:text-right">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted group-hover:text-content-inverted-muted mb-2">Required CGPA</p>
-                  <p className="text-xl font-bold tracking-tighter group-hover:text-accent">{job.cgpaRequired || 'N/A'}</p>
-                </div>
-
-                <Link to={`/student/jobs/${job.id}`} className="w-full">
-                  <Button variant="inverted" className="w-full group-hover:bg-accent group-hover:text-inverted">
-                    VIEW DETAILS
+              <div className="p-4 bg-base/50 border-t border-border-light flex justify-end">
+                <Link to={`/student/jobs/${job.id}`}>
+                  <Button variant="secondary" size="sm">
+                    View Details
                   </Button>
                 </Link>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

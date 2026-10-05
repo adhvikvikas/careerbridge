@@ -34,52 +34,52 @@ export default function StudentApplicationDetails() {
   const { job } = application;
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8">
       <Link to="/student/applications">
-        <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>
-          Return to Telemetry
+        <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />} className="mb-2">
+          Back to Applications
         </Button>
       </Link>
 
-      <div className="border border-border-strong bg-inverted text-content-inverted p-12 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div className="absolute inset-0 grid-lines-dark opacity-30 pointer-events-none mix-blend-overlay z-0"></div>
+      <div className="bg-surface border border-border-light rounded-2xl p-8 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
         <div className="relative z-10 flex items-center gap-6">
-          <div className="w-16 h-16 bg-accent flex items-center justify-center font-bold text-inverted text-2xl shrink-0">
+          <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center font-bold text-2xl shrink-0">
             {job.recruiter.companyName[0].toUpperCase()}
           </div>
           <div>
-            <h1 className="text-4xl font-bold uppercase tracking-tighter mb-2">{job.title}</h1>
-            <p className="text-xs font-bold uppercase tracking-widest text-accent flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-content mb-1">{job.title}</h1>
+            <p className="text-sm font-medium text-content-muted flex items-center gap-2">
               <Building2 className="w-4 h-4" /> {job.recruiter.companyName}
             </p>
           </div>
         </div>
         <div className="relative z-10 flex flex-col items-start md:items-end gap-2 shrink-0">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-content-inverted-muted">Pipeline Status</span>
+          <span className="text-xs font-semibold text-content-muted">Pipeline Status</span>
           <StatusBadge status={application.status} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2">
           <Card>
-            <CardHeader>
+            <CardHeader className="border-b border-border-light bg-base/50">
               <CardTitle className="flex items-center gap-3">
-                <History className="w-5 h-5" />
+                <History className="w-5 h-5 text-content-muted" />
                 Application Timeline
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-8 relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px before:h-full before:w-[2px] before:bg-border-light">
+            <CardContent className="pt-6">
+              <div className="space-y-6 relative before:absolute before:inset-0 before:ml-3 before:-translate-x-px before:h-full before:w-[2px] before:bg-border-light">
                 {application.statusHistory?.map((history, idx) => (
-                  <div key={history.id} className="relative flex items-center justify-between group pl-12">
-                    <div className="absolute left-0 top-1 w-6 h-6 rounded-full border-2 border-inverted bg-base flex items-center justify-center shrink-0 z-10">
-                      <div className="w-2 h-2 bg-inverted rounded-full" />
+                  <div key={history.id} className="relative flex items-center justify-between group pl-10">
+                    <div className="absolute left-0 top-1.5 w-6 h-6 rounded-full border-2 border-surface bg-base flex items-center justify-center shrink-0 z-10">
+                      <div className="w-2 h-2 bg-primary rounded-full" />
                     </div>
-                    <div className="w-full bg-surface border border-border-light p-6 group-hover:border-inverted transition-colors">
+                    <div className="w-full bg-base border border-border-light rounded-xl p-5 hover:border-primary/30 transition-colors">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                        <div className="text-lg font-bold tracking-tight uppercase">{history.newStatus}</div>
-                        <time className="text-[10px] font-bold uppercase tracking-widest text-content-muted">
+                        <div className="text-base font-bold text-content">{history.newStatus.replace('_', ' ')}</div>
+                        <time className="text-xs font-medium text-content-muted">
                           {new Date(history.createdAt).toLocaleString()}
                         </time>
                       </div>
@@ -93,32 +93,32 @@ export default function StudentApplicationDetails() {
 
         <div>
           <Card>
-            <CardHeader>
+            <CardHeader className="border-b border-border-light bg-base/50">
               <CardTitle>Opportunity Meta</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="pt-6 space-y-6">
               <div className="flex items-center gap-4">
-                <div className="w-8 h-8 border border-border-light flex items-center justify-center bg-base text-content-muted shrink-0">
-                  <MapPin className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center shrink-0">
+                  <MapPin className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-1">Location</p>
-                  <p className="text-sm font-bold tracking-tight uppercase">{job.location}</p>
+                  <p className="text-xs font-medium text-content-muted mb-0.5">Location</p>
+                  <p className="text-sm font-semibold text-content">{job.location}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="w-8 h-8 border border-border-light flex items-center justify-center bg-base text-content-muted shrink-0">
-                  <BriefcaseBusiness className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center shrink-0">
+                  <BriefcaseBusiness className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mb-1">Classification</p>
-                  <p className="text-sm font-bold tracking-tight uppercase">{job.jobType}</p>
+                  <p className="text-xs font-medium text-content-muted mb-0.5">Classification</p>
+                  <p className="text-sm font-semibold text-content">{job.jobType.replace('_', ' ')}</p>
                 </div>
               </div>
-              <div className="mt-8 pt-8 border-t border-border-light">
+              <div className="mt-6 pt-6 border-t border-border-light">
                 <Link to={`/student/jobs/${job.id}`}>
-                  <Button variant="outline-inverted" className="w-full">
-                    VIEW ORIGINAL POSTING
+                  <Button variant="secondary" className="w-full">
+                    View Original Posting
                   </Button>
                 </Link>
               </div>

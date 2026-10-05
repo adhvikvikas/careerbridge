@@ -39,65 +39,65 @@ export default function StudentSavedJobs() {
   if (error) return <ErrorState message={error} onRetry={fetchSavedJobs} />;
 
   return (
-    <div className="space-y-12">
-      <div className="border-b border-border-dark pb-12">
-        <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4">BOOKMARKED OPPORTUNITIES</h1>
-        <p className="text-sm font-semibold uppercase tracking-widest text-content-muted">Opportunities you have saved for future application.</p>
+    <div className="space-y-8">
+      <div className="pb-6 border-b border-border-light">
+        <h1 className="text-3xl font-bold tracking-tight text-content mb-2">Saved Opportunities</h1>
+        <p className="text-sm font-medium text-content-muted">Opportunities you have bookmarked for future application.</p>
       </div>
 
       {savedJobs.length === 0 ? (
         <EmptyState
           icon={<Bookmark className="w-10 h-10" />}
-          title="NO BOOKMARKS DETECTED"
-          description="You haven't saved any opportunities yet. Explore the pipeline."
-          actionText="DISCOVER OPPORTUNITIES"
+          title="No Bookmarks Found"
+          description="You haven't saved any opportunities yet."
+          actionText="Discover Opportunities"
           onAction={() => window.location.href = '/student/jobs'}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {savedJobs.map(item => {
             const job = item.job;
             return (
-              <div key={item.id} className="border border-border-light bg-surface hover:border-inverted transition-colors group flex flex-col h-full">
-                <div className="p-8 flex-1">
-                  <div className="flex gap-6 items-start mb-8">
-                    <div className="w-12 h-12 bg-inverted text-inverted flex items-center justify-center font-bold text-xl shrink-0">
+              <div key={item.id} className="border border-border-light rounded-2xl bg-surface hover:border-primary/30 transition-colors flex flex-col h-full overflow-hidden shadow-sm">
+                <div className="p-6 flex-1">
+                  <div className="flex gap-4 items-start mb-6">
+                    <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center font-bold text-xl shrink-0">
                       {job.recruiter.companyName[0].toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold uppercase tracking-tight group-hover:text-accent transition-colors line-clamp-1">
+                      <h3 className="text-lg font-bold text-content leading-tight hover:text-primary transition-colors line-clamp-1">
                         {job.title}
                       </h3>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted mt-2 truncate">
+                      <p className="text-sm font-medium text-content-muted mt-1 truncate">
                         {job.recruiter.companyName}
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-content">
-                      <MapPin className="w-4 h-4 text-content-muted" /> <span className="truncate">{job.location}</span>
+                  <div className="grid grid-cols-1 gap-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-content-muted">
+                      <MapPin className="w-4 h-4 shrink-0" /> <span className="truncate">{job.location}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-content">
-                      <BriefcaseBusiness className="w-4 h-4 text-content-muted" /> {job.jobType}
+                    <div className="flex items-center gap-2 text-sm font-medium text-content-muted">
+                      <BriefcaseBusiness className="w-4 h-4 shrink-0" /> {job.jobType.replace('_', ' ')}
                     </div>
-                    <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-content">
-                      <IndianRupee className="w-4 h-4 text-content-muted" /> <span className="truncate">{job.salary || 'Not disclosed'}</span>
+                    <div className="flex items-center gap-2 text-sm font-medium text-content-muted">
+                      <IndianRupee className="w-4 h-4 shrink-0" /> <span className="truncate">{job.salary || 'Not disclosed'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex border-t border-border-light">
+                <div className="flex border-t border-border-light bg-base/50 p-4 gap-4">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     onClick={() => removeSavedJob(job.id)}
-                    className="w-1/2 rounded-none border-r border-border-light text-status-danger hover:text-status-danger hover:bg-status-danger/10"
+                    className="w-1/2 text-status-danger border-status-danger/30 hover:bg-status-danger/10"
                   >
-                    REMOVE
+                    Remove
                   </Button>
                   <Link to={`/student/jobs/${job.id}`} className="w-1/2">
-                    <Button variant="inverted" className="w-full rounded-none group-hover:bg-accent group-hover:text-inverted">
-                      INSPECT
+                    <Button variant="secondary" className="w-full">
+                      View Details
                     </Button>
                   </Link>
                 </div>
