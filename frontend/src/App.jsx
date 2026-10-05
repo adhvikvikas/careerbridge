@@ -35,305 +35,169 @@ const Home = () => {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen flex flex-col bg-inverted text-content-inverted font-sans selection:bg-accent selection:text-inverted">
-
-      {/* Editorial Grid Lines */}
-      <div className="fixed inset-0 grid-lines-dark opacity-40 pointer-events-none mix-blend-overlay z-0"></div>
-
+    <div className="min-h-screen flex flex-col bg-base text-content font-sans">
       {/* Navigation */}
-      <header className="h-24 px-8 md:px-12 flex items-center justify-between border-b border-border-dark relative z-20">
-        <div className="text-2xl font-bold tracking-tighter">CAREERBRIDGE</div>
-        <nav className="hidden md:flex items-center gap-12 text-xs font-bold tracking-widest uppercase text-content-inverted-muted">
-          <a href="#product" className="hover:text-accent transition-colors">Product</a>
-          <a href="#roles" className="hover:text-accent transition-colors">Roles</a>
-          <a href="#process" className="hover:text-accent transition-colors">Process</a>
+      <header className="h-20 px-6 md:px-12 flex items-center justify-between border-b border-border-light bg-surface sticky top-0 z-50">
+        <div className="text-xl font-bold tracking-tight text-content">CareerBridge</div>
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-content-muted">
+          <a href="#product" className="hover:text-primary transition-colors">Platform</a>
+          <a href="#roles" className="hover:text-primary transition-colors">Solutions</a>
+          <a href="#process" className="hover:text-primary transition-colors">Process</a>
         </nav>
         <div>
           {user ? (
-            <a href={`/${user.role.toLowerCase()}/dashboard`} className="inline-flex items-center justify-center px-6 py-3 text-xs font-bold uppercase tracking-widest bg-accent text-inverted hover:bg-accent-hover transition-colors">
-              Enter Platform
-            </a>
+            <Button variant="primary" onClick={() => window.location.href=`/${user.role.toLowerCase()}/dashboard`}>
+              Enter Portal
+            </Button>
           ) : (
-            <a href="/login" className="inline-flex items-center justify-center px-6 py-3 text-xs font-bold uppercase tracking-widest bg-transparent border border-border-dark text-content-inverted hover:border-content-inverted transition-colors">
-              Sign In
-            </a>
+            <div className="flex gap-4">
+              <Button variant="outline" onClick={() => window.location.href='/login'}>
+                Sign In
+              </Button>
+            </div>
           )}
         </div>
       </header>
 
-      <main className="flex-1 relative z-10">
-
+      <main className="flex-1">
         {/* SECTION 1 - HERO */}
-        <section className="min-h-[85vh] flex flex-col justify-center px-8 md:px-12 py-20 relative border-b border-border-dark">
-          <div className="max-w-7xl">
-            <div className="mb-12 inline-flex items-center gap-3 px-4 py-2 border border-border-dark bg-inverted-surface text-xs font-bold uppercase tracking-widest text-accent">
-              <span className="w-2 h-2 bg-accent rounded-full animate-pulse"></span>
+        <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 md:px-12 overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none -z-10" />
+          
+          <div className="max-w-5xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-8">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
               Platform Live for 2026 Placements
             </div>
 
-            <h1 className="text-6xl md:text-8xl lg:text-[10rem] font-bold leading-[0.85] tracking-tighter mb-12 uppercase max-w-5xl text-transparent bg-clip-text bg-gradient-to-br from-white via-gray-200 to-gray-600">
-              FIND YOUR NEXT<br/>
-              <span className="text-accent">OPPORTUNITY.</span>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 text-content leading-tight">
+              Institutional Recruitment, <br className="hidden md:block"/>
+              <span className="text-primary">Perfected.</span>
             </h1>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl items-end">
-              <p className="text-xl md:text-2xl text-content-inverted-muted font-medium leading-relaxed">
-                CareerBridge connects ambitious students, leading employers, and placement teams through one intelligent recruitment platform.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-start md:justify-end">
-                {user ? (
-                  <Button variant="accent" size="lg" onClick={() => window.location.href=`/${user.role.toLowerCase()}/dashboard`}>
-                    ENTER PORTAL <ArrowRight className="w-5 h-5 ml-2" />
+            <p className="text-lg md:text-xl text-content-muted font-medium max-w-3xl mx-auto mb-10 leading-relaxed">
+              CareerBridge connects ambitious students, leading employers, and placement teams through one intelligent, streamlined platform.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {user ? (
+                <Button variant="primary" size="lg" className="px-8" onClick={() => window.location.href=`/${user.role.toLowerCase()}/dashboard`}>
+                  Enter Portal <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              ) : (
+                <>
+                  <Button variant="primary" size="lg" className="px-8" onClick={() => window.location.href='/login'}>
+                    Sign In
                   </Button>
-                ) : (
-                  <>
-                    <Button variant="accent" size="lg" onClick={() => window.location.href='/login'}>
-                      EXPLORE OPPORTUNITIES
-                    </Button>
-                    <Button variant="outline-inverted" size="lg" onClick={() => window.location.href='/login'}>
-                      FOR RECRUITERS
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Abstract Cinematic UI Preview */}
-          <div className="absolute right-0 bottom-0 w-full md:w-[45vw] h-[50vh] border-t border-l border-border-dark bg-inverted-surface hidden lg:block overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-t from-inverted to-transparent z-10" />
-            <div className="p-8 grid gap-4 opacity-50 transform rotate-[-2deg] scale-110 origin-bottom-right">
-              <div className="h-16 w-full border border-border-dark bg-inverted flex items-center px-6 gap-4">
-                <div className="w-8 h-8 bg-accent" />
-                <div className="h-2 w-32 bg-border-dark" />
-                <div className="h-2 w-24 bg-border-dark ml-auto" />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="h-32 border border-border-dark bg-inverted/50" />
-                <div className="h-32 border border-border-dark bg-inverted/50" />
-                <div className="h-32 border border-accent/20 bg-accent/5" />
-              </div>
-              <div className="h-48 border border-border-dark bg-inverted" />
-            </div>
-            <div className="absolute bottom-8 left-8 z-20 text-xs font-mono text-content-inverted-muted">
-              SYS.STATUS: <span className="text-accent">ONLINE</span><br/>
-              NODES: 14.2K<br/>
-              REQ/S: 450
+                  <Button variant="outline" size="lg" className="px-8" onClick={() => window.location.href='/login'}>
+                    Explore Roles
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </section>
 
-        {/* SECTION 2 - PRODUCT STATEMENT */}
-        <section id="product" className="py-32 px-8 md:px-12 border-b border-border-dark bg-inverted-surface relative overflow-hidden">
-          <div className="max-w-5xl relative z-10">
-            <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-tight mb-8">
-              ONE PLATFORM.<br />
-              <span className="text-content-inverted-muted">EVERY STEP OF THE</span><br />
-              <span className="text-content-inverted-muted">PLACEMENT JOURNEY.</span>
-            </h2>
-            <div className="w-full h-px bg-border-dark my-12" />
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-sm font-semibold uppercase tracking-widest text-content-inverted-muted">
-              <div className="flex flex-col gap-4">
-                <span className="text-accent">01.</span>
-                STUDENT PROFILE
-              </div>
-              <div className="flex flex-col gap-4">
-                <span className="text-accent">02.</span>
-                OPPORTUNITY DISCOVERY
-              </div>
-              <div className="flex flex-col gap-4">
-                <span className="text-accent">03.</span>
-                APPLICATION WORKFLOW
-              </div>
-              <div className="flex flex-col gap-4">
-                <span className="text-accent">04.</span>
-                SELECTION
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 3 - THREE ROLES */}
-        <section id="roles" className="grid grid-cols-1 lg:grid-cols-3 border-b border-border-dark">
-          <div className="p-12 md:p-16 border-b lg:border-b-0 lg:border-r border-border-dark hover:bg-inverted-surface transition-colors group">
-            <h3 className="text-3xl font-bold uppercase tracking-tighter mb-6 group-hover:text-accent transition-colors">Students</h3>
-            <p className="text-content-inverted-muted mb-12 text-lg">
-              Discover opportunities that match your profile and eligibility criteria with precision.
-            </p>
-            <div className="w-full h-48 border border-border-dark mb-12 relative overflow-hidden bg-inverted p-6 flex flex-col justify-end">
-              <div className="absolute top-6 left-6 text-[10px] uppercase font-bold text-accent">Eligible ✓</div>
-              <div className="text-xl font-bold uppercase tracking-tight">Software Engineer</div>
-              <div className="text-xs text-content-inverted-muted mt-2">CTC: ₹14 LPA</div>
-            </div>
-            <Button variant="outline-inverted" className="w-full">Student Portal</Button>
-          </div>
-
-          <div className="p-12 md:p-16 border-b lg:border-b-0 lg:border-r border-border-dark hover:bg-inverted-surface transition-colors group">
-            <h3 className="text-3xl font-bold uppercase tracking-tighter mb-6 group-hover:text-accent transition-colors">Recruiters</h3>
-            <p className="text-content-inverted-muted mb-12 text-lg">
-              Manage job postings, applicant pipelines, and recruitment workflows from a unified command center.
-            </p>
-            <div className="w-full h-48 border border-border-dark mb-12 relative overflow-hidden bg-inverted p-6 flex flex-col justify-end">
-              <div className="absolute top-6 right-6 text-[10px] uppercase font-bold bg-accent text-inverted px-2 py-1">24 New</div>
-              <div className="text-xl font-bold uppercase tracking-tight">Applicants</div>
-              <div className="text-xs text-content-inverted-muted mt-2">Pipeline under review</div>
-            </div>
-            <Button variant="outline-inverted" className="w-full">Recruiter Portal</Button>
-          </div>
-
-          <div className="p-12 md:p-16 hover:bg-inverted-surface transition-colors group">
-            <h3 className="text-3xl font-bold uppercase tracking-tighter mb-6 group-hover:text-accent transition-colors">Administrators</h3>
-            <p className="text-content-inverted-muted mb-12 text-lg">
-              Control approvals, enforce governance, and maintain institutional workflows with immutable audit logs.
-            </p>
-            <div className="w-full h-48 border border-border-dark mb-12 relative overflow-hidden bg-inverted p-6 flex flex-col justify-end">
-              <div className="absolute top-6 left-6 text-[10px] uppercase font-bold text-status-warning">Pending Approval</div>
-              <div className="text-xl font-bold uppercase tracking-tight">Governance</div>
-              <div className="text-xs text-content-inverted-muted mt-2">3 actions required</div>
-            </div>
-            <Button variant="outline-inverted" className="w-full">Admin Portal</Button>
-          </div>
-        </section>
-
-        {/* SECTION 5 - HOW IT WORKS */}
-        <section id="process" className="py-32 px-8 md:px-12 border-b border-border-dark">
+        {/* SECTION 2 - THREE ROLES */}
+        <section id="roles" className="py-24 px-6 md:px-12 bg-surface border-y border-border-light">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
-              <div>
-                <h2 className="text-5xl font-bold uppercase tracking-tighter leading-none sticky top-32">
-                  THE SYSTEM<br/>
-                  ARCHITECTURE.
-                </h2>
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">One unified platform.</h2>
+              <p className="text-content-muted text-lg">Tailored experiences for every step of the placement journey.</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Student */}
+              <div className="p-8 rounded-2xl bg-base border border-border-light hover:border-primary/30 transition-colors">
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-6">
+                  <Network className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold mb-3">Students</h3>
+                <p className="text-content-muted mb-8 leading-relaxed">
+                  Discover opportunities that match your profile. Track your applications and eligibility criteria with precision.
+                </p>
+                <Button variant="outline" className="w-full">Student Portal</Button>
               </div>
-              <div className="space-y-24">
-                <div className="relative pl-12 border-l border-border-dark">
-                  <div className="absolute top-0 left-0 -translate-x-1/2 w-4 h-4 bg-inverted border border-accent"></div>
-                  <h4 className="text-xs font-bold text-accent uppercase tracking-widest mb-4">01 — Discover</h4>
-                  <h3 className="text-3xl font-bold uppercase tracking-tight mb-4">Smart Discovery</h3>
-                  <p className="text-content-inverted-muted text-lg">
-                    Find relevant opportunities matched exactly to your academic profile and department.
-                  </p>
+
+              {/* Recruiter */}
+              <div className="p-8 rounded-2xl bg-base border border-border-light hover:border-primary/30 transition-colors">
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-6">
+                  <BarChart className="w-6 h-6" />
                 </div>
-                <div className="relative pl-12 border-l border-border-dark">
-                  <div className="absolute top-0 left-0 -translate-x-1/2 w-4 h-4 bg-inverted border border-accent"></div>
-                  <h4 className="text-xs font-bold text-accent uppercase tracking-widest mb-4">02 — Check</h4>
-                  <h3 className="text-3xl font-bold uppercase tracking-tight mb-4">Eligibility Engine</h3>
-                  <p className="text-content-inverted-muted text-lg">
-                    Know immediately whether you qualify before applying, enforced securely on the backend.
-                  </p>
+                <h3 className="text-xl font-bold mb-3">Recruiters</h3>
+                <p className="text-content-muted mb-8 leading-relaxed">
+                  Manage job postings, applicant pipelines, and recruitment workflows from a unified command center.
+                </p>
+                <Button variant="outline" className="w-full">Recruiter Portal</Button>
+              </div>
+
+              {/* Admin */}
+              <div className="p-8 rounded-2xl bg-base border border-border-light hover:border-primary/30 transition-colors">
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-6">
+                  <Lock className="w-6 h-6" />
                 </div>
-                <div className="relative pl-12 border-l border-border-dark">
-                  <div className="absolute top-0 left-0 -translate-x-1/2 w-4 h-4 bg-inverted border border-accent"></div>
-                  <h4 className="text-xs font-bold text-accent uppercase tracking-widest mb-4">03 — Apply & Track</h4>
-                  <h3 className="text-3xl font-bold uppercase tracking-tight mb-4">Workflow Control</h3>
-                  <p className="text-content-inverted-muted text-lg">
-                    Submit applications and track status changes in real-time across the entire recruitment cycle.
-                  </p>
-                </div>
+                <h3 className="text-xl font-bold mb-3">Administrators</h3>
+                <p className="text-content-muted mb-8 leading-relaxed">
+                  Control approvals, enforce governance, and maintain institutional workflows with immutable audit logs.
+                </p>
+                <Button variant="outline" className="w-full">Admin Portal</Button>
               </div>
             </div>
           </div>
         </section>
 
-        {/* SECTION 9 - CAPABILITIES */}
-        <section className="py-32 px-8 md:px-12 border-b border-border-dark bg-inverted-surface">
+        {/* SECTION 3 - CAPABILITIES */}
+        <section id="product" className="py-24 px-6 md:px-12">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-5xl font-bold uppercase tracking-tighter mb-20 text-center">Platform Capabilities</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-16 gap-x-8">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-16 text-center">Platform Capabilities</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               {[
-                { icon: <Box />, title: 'Smart Discovery' },
-                { icon: <CheckSquare />, title: 'Eligibility' },
-                { icon: <BarChart />, title: 'Tracking' },
-                { icon: <Network />, title: 'Management' },
-                { icon: <Lock />, title: 'Secure Access' },
-                { icon: <Zap />, title: 'Approvals' },
+                { icon: <Box />, title: 'Smart Discovery', desc: 'Matched opportunities' },
+                { icon: <CheckSquare />, title: 'Eligibility', desc: 'Automated verification' },
+                { icon: <BarChart />, title: 'Tracking', desc: 'Real-time status' },
+                { icon: <Lock />, title: 'Security', desc: 'Role-based access' },
               ].map((feature, i) => (
-                <div key={i} className="flex flex-col items-center text-center group">
-                  <div className="w-16 h-16 border border-border-dark flex items-center justify-center mb-6 group-hover:border-accent group-hover:text-accent transition-colors">
+                <div key={i} className="flex flex-col items-center text-center p-6">
+                  <div className="w-14 h-14 bg-surface border border-border-light text-primary rounded-xl flex items-center justify-center mb-4 shadow-sm">
                     {feature.icon}
                   </div>
-                  <h4 className="text-sm font-bold uppercase tracking-widest mb-2">{feature.title}</h4>
-                  <div className="w-8 h-px bg-border-dark group-hover:bg-accent transition-colors mt-4" />
+                  <h4 className="text-sm font-bold mb-1">{feature.title}</h4>
+                  <p className="text-xs text-content-muted">{feature.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* SECTION 10 - PRINCIPLES */}
-        <section className="py-32 px-8 md:px-12 border-b border-border-dark">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div>
-              <h4 className="text-xs font-bold text-accent uppercase tracking-widest mb-4">Principle I</h4>
-              <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Role-Based</h3>
-              <p className="text-sm text-content-inverted-muted">Every user sees only the tools and workflows strictly relevant to their role.</p>
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-accent uppercase tracking-widest mb-4">Principle II</h4>
-              <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Secure</h3>
-              <p className="text-sm text-content-inverted-muted">Protected authentication, authorization, and data scoping enforced at the API layer.</p>
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-accent uppercase tracking-widest mb-4">Principle III</h4>
-              <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Structured</h3>
-              <p className="text-sm text-content-inverted-muted">Every action follows defined approval workflows and precise status rules.</p>
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-accent uppercase tracking-widest mb-4">Principle IV</h4>
-              <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Transparent</h3>
-              <p className="text-sm text-content-inverted-muted">Application activity and administrative governance actions are fully tracked.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* SECTION 11 - FINAL CTA */}
-        <section className="py-48 px-8 md:px-12 bg-accent text-inverted flex flex-col items-center text-center">
-          <h2 className="text-6xl md:text-8xl lg:text-[10rem] font-bold leading-[0.85] tracking-tighter mb-12 uppercase">
-            YOUR NEXT<br/>OPPORTUNITY<br/>STARTS HERE.
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-6">
-            <Button variant="inverted" size="lg" onClick={() => window.location.href='/login'}>
-              GET STARTED
+        {/* SECTION 4 - FINAL CTA */}
+        <section className="py-24 px-6 md:px-12 bg-primary text-white text-center">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-8">
+              Ready to begin?
+            </h2>
+            <p className="text-primary-100 text-lg mb-10 max-w-xl mx-auto">
+              Join the institutional platform powering the next generation of recruitment.
+            </p>
+            <Button variant="secondary" size="lg" className="px-8 text-primary font-bold" onClick={() => window.location.href='/login'}>
+              Sign In to CareerBridge
             </Button>
           </div>
         </section>
       </main>
 
-      {/* SECTION 12 - FOOTER */}
-      <footer className="py-24 px-8 md:px-12 border-t border-border-dark bg-inverted relative z-10">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-16 md:gap-8">
-          <div className="col-span-1 md:col-span-1">
-            <div className="text-3xl font-bold tracking-tighter mb-6">CAREERBRIDGE</div>
-            <p className="text-sm text-content-inverted-muted max-w-xs">
-              The premium institutional recruitment and placement management platform.
-            </p>
+      {/* FOOTER */}
+      <footer className="py-12 px-6 md:px-12 border-t border-border-light bg-surface">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="text-lg font-bold tracking-tight text-content">CareerBridge</div>
+          <div className="flex gap-6 text-sm text-content-muted font-medium">
+            <a href="#" className="hover:text-primary transition-colors">Students</a>
+            <a href="#" className="hover:text-primary transition-colors">Recruiters</a>
+            <a href="#" className="hover:text-primary transition-colors">Administration</a>
           </div>
-
-          <div className="flex flex-col gap-4">
-            <h4 className="text-xs font-bold uppercase tracking-widest mb-4 text-white">Students</h4>
-            <a href="#" className="text-sm text-content-inverted-muted hover:text-accent transition-colors">Jobs</a>
-            <a href="#" className="text-sm text-content-inverted-muted hover:text-accent transition-colors">Applications</a>
-            <a href="#" className="text-sm text-content-inverted-muted hover:text-accent transition-colors">Profile</a>
+          <div className="text-xs text-content-muted">
+            &copy; 2026 CareerBridge Inc. All rights reserved.
           </div>
-
-          <div className="flex flex-col gap-4">
-            <h4 className="text-xs font-bold uppercase tracking-widest mb-4 text-white">Recruiters</h4>
-            <a href="#" className="text-sm text-content-inverted-muted hover:text-accent transition-colors">Post Job</a>
-            <a href="#" className="text-sm text-content-inverted-muted hover:text-accent transition-colors">Applicants</a>
-            <a href="#" className="text-sm text-content-inverted-muted hover:text-accent transition-colors">Company Profile</a>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <h4 className="text-xs font-bold uppercase tracking-widest mb-4 text-white">Administration</h4>
-            <a href="#" className="text-sm text-content-inverted-muted hover:text-accent transition-colors">Governance</a>
-            <a href="#" className="text-sm text-content-inverted-muted hover:text-accent transition-colors">Approvals</a>
-            <a href="#" className="text-sm text-content-inverted-muted hover:text-accent transition-colors">Audit Logs</a>
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto mt-24 pt-8 border-t border-border-dark flex flex-col md:flex-row justify-between items-center text-xs text-content-inverted-muted font-bold tracking-widest uppercase">
-          <p>© 2026 CAREERBRIDGE INC.</p>
-          <p>SYSTEM.ONLINE</p>
         </div>
       </footer>
     </div>
