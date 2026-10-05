@@ -74,9 +74,9 @@ export default function AdminAuditLogs() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  {log.details ? (
-                    <div className="text-xs text-content-muted max-w-xs truncate" title={log.details}>
-                      {log.details}
+                  {log.reason ? (
+                    <div className="text-xs text-content-muted max-w-xs truncate" title={log.reason}>
+                      {log.reason}
                     </div>
                   ) : (
                     <span className="text-content-muted/50">-</span>
