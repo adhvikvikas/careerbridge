@@ -361,12 +361,15 @@ export default function App() {
           <Route path="/recruiter" element={<ProtectedRoute allowedRole="RECRUITER"><RecruiterLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/recruiter/dashboard" replace />} />
             <Route path="dashboard" element={<RecruiterDashboard />} />
+            <Route path="company" element={<div className="p-8"><h1 className="text-2xl font-bold">Company Placeholder</h1></div>} />
             <Route path="profile" element={<RecruiterProfile />} />
             <Route path="jobs" element={<RecruiterJobs />} />
             <Route path="jobs/new" element={<RecruiterJobForm />} />
             <Route path="jobs/:id/edit" element={<RecruiterJobForm />} />
             <Route path="jobs/:id/applications" element={<RecruiterApplications />} />
+            <Route path="applicants" element={<div className="p-8"><h1 className="text-2xl font-bold">Applicants Placeholder</h1></div>} />
             <Route path="applications/:id" element={<RecruiterApplicationDetails />} />
+            <Route path="notifications" element={<div className="p-8"><h1 className="text-2xl font-bold">Notifications Placeholder</h1></div>} />
           </Route>
 
           {/* Student Routes */}

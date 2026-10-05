@@ -5,7 +5,7 @@ import { LayoutDashboard, Search, FileText, Bookmark, User, Bell } from 'lucide-
 
 const navigation = [
   { label: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
-  { label: 'Find Jobs', href: '/student/jobs', icon: Search },
+  { label: 'Jobs', href: '/student/jobs', icon: Search },
   { label: 'Applications', href: '/student/applications', icon: FileText },
   { label: 'Saved Jobs', href: '/student/saved-jobs', icon: Bookmark },
   { label: 'Notifications', href: '/student/notifications', icon: Bell },

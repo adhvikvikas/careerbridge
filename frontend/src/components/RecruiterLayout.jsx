@@ -1,12 +1,15 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { AppShell } from './ui/AppShell';
-import { LayoutDashboard, User, BriefcaseBusiness, Users } from 'lucide-react';
+import { LayoutDashboard, Building2, BriefcaseBusiness, Users, Bell, User } from 'lucide-react';
 
 const navigation = [
   { label: 'Dashboard', href: '/recruiter/dashboard', icon: LayoutDashboard },
+  { label: 'Company', href: '/recruiter/company', icon: Building2 },
+  { label: 'Jobs', href: '/recruiter/jobs', icon: BriefcaseBusiness },
+  { label: 'Applicants', href: '/recruiter/applicants', icon: Users },
+  { label: 'Notifications', href: '/recruiter/notifications', icon: Bell },
   { label: 'Profile', href: '/recruiter/profile', icon: User },
-  { label: 'My Jobs', href: '/recruiter/jobs', icon: BriefcaseBusiness },
 ];
 
 export default function RecruiterLayout() {
