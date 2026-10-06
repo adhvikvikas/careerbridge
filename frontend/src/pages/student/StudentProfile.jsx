@@ -58,7 +58,7 @@ export default function StudentProfile() {
       await api.patch('/student/profile', payload);
       setMessage({ type: 'success', text: 'PROFILE TELEMETRY UPDATED.' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'FAILED TO UPDATE PROFILE.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'FAILED TO UPDATE PROFILE.' });
     } finally {
       setSaving(false);
     }

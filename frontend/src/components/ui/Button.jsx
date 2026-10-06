@@ -9,6 +9,8 @@ export const Button = ({
   loading = false,
   disabled = false,
   icon,
+  'aria-label': ariaLabel,
+  title,
   ...props
 }) => {
   const baseStyle = "inline-flex items-center justify-center font-medium rounded-md transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed text-sm border border-transparent shadow-sm";
@@ -31,6 +33,8 @@ export const Button = ({
     <button
       className={`${baseStyle} ${variants[variant]} ${sizes[size]} ${className}`}
       disabled={loading || disabled}
+      aria-label={ariaLabel || title || (!children && icon ? 'Icon button' : undefined)}
+      title={title}
       {...props}
     >
       {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

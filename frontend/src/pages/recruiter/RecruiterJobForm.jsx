@@ -89,7 +89,7 @@ export default function RecruiterJobForm() {
 
       navigate('/recruiter/jobs');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save job.');
+      setError(err.response?.data?.message || 'Failed to save job.');
       setSaving(false);
     }
   };

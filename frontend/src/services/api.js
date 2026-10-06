@@ -1,5 +1,17 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+class ApiError extends Error {
+  constructor(message, status, data) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.response = {
+      status,
+      data
+    };
+  }
+}
+
 export const api = async (endpoint, options = {}) => {
   const token = localStorage.getItem('careerbridge_token');
   const headers = {
@@ -17,7 +29,7 @@ export const api = async (endpoint, options = {}) => {
   
   // Cleanly handle unauthorized responses by throwing or returning a consistent format
   if (!response.ok) {
-    throw new Error(data.message || 'API Request Failed');
+    throw new ApiError(data.message || data.error || 'API Request Failed', response.status, data);
   }
 
   return data;

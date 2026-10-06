@@ -25,7 +25,7 @@ export default function StudentJobDetails() {
       setData(response.data);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load job details.');
+      setError(err.response?.data?.message || 'Failed to load job details.');
     } finally {
       setLoading(false);
     }
@@ -39,7 +39,7 @@ export default function StudentJobDetails() {
       setMessage({ type: 'success', text: 'APPLICATION TRANSMITTED SUCCESSFULLY' });
       await fetchJobDetails();
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'FAILED TO SUBMIT APPLICATION' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'FAILED TO SUBMIT APPLICATION' });
     } finally {
       setApplying(false);
     }
@@ -58,7 +58,7 @@ export default function StudentJobDetails() {
       }
       await fetchJobDetails();
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'FAILED TO SAVE JOB' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'FAILED TO SAVE JOB' });
     } finally {
       setSaving(false);
     }

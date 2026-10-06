@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Login from './pages/auth/Login';
+import NotFound from './pages/NotFound';
 import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCompanies from './pages/admin/AdminCompanies';
@@ -233,7 +234,6 @@ export default function App() {
             <Route path="jobs/new" element={<RecruiterJobForm />} />
             <Route path="jobs/:id/edit" element={<RecruiterJobForm />} />
             <Route path="jobs/:id/applications" element={<RecruiterApplications />} />
-            <Route path="applicants" element={<div className="p-8"><h1 className="text-2xl font-bold">Applicants Placeholder</h1></div>} />
             <Route path="applications/:id" element={<RecruiterApplicationDetails />} />
             <Route path="notifications" element={<RecruiterNotifications />} />
           </Route>
@@ -250,6 +250,9 @@ export default function App() {
             <Route path="saved-jobs" element={<StudentSavedJobs />} />
             <Route path="notifications" element={<StudentNotifications />} />
           </Route>
+
+          {/* 404 Route */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </AuthProvider>

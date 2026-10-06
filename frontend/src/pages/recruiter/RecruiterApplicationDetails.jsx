@@ -45,7 +45,7 @@ export default function RecruiterApplicationDetails() {
       await fetchDetails();
       setMessage({ type: 'success', text: 'Application status updated successfully.' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to update application status.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to update application status.' });
     } finally {
       setUpdatingStatus(false);
     }
@@ -59,7 +59,7 @@ export default function RecruiterApplicationDetails() {
       await fetchDetails();
       setMessage({ type: 'success', text: 'Internal notes saved successfully.' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to save notes.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to save notes.' });
     } finally {
       setUpdatingNotes(false);
     }

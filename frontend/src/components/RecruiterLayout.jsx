@@ -7,7 +7,6 @@ const navigation = [
   { label: 'Dashboard', href: '/recruiter/dashboard', icon: LayoutDashboard },
   { label: 'Company', href: '/recruiter/company', icon: Building2 },
   { label: 'Jobs', href: '/recruiter/jobs', icon: BriefcaseBusiness },
-  { label: 'Applicants', href: '/recruiter/applicants', icon: Users },
   { label: 'Notifications', href: '/recruiter/notifications', icon: Bell },
   { label: 'Profile', href: '/recruiter/profile', icon: User },
 ];
