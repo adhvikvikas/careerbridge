@@ -1,7 +1,61 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Inter", "Geist", "Plus Jakarta Sans", sans-serif;
+
+  /* Foundation Colors */
+  --color-base: #F7F5F0; /* Warm Ivory */
+  --color-surface: #FFFFFF;
+  --color-inverted: #263B4A; /* Muted Navy */
+  --color-inverted-surface: #1E303D;
+
+  /* Primary: Muted Terracotta for actions */
+  --color-primary: #B76E4C; 
+  --color-primary-hover: #A05D3D;
+  
+  /* Brand Navy */
+  --color-navy: #263B4A;
+
+  /* Text Colors */
+  --color-content: #20252B;
+  --color-content-muted: #667085;
+  --color-content-inverted: #FFFFFF;
+  --color-content-inverted-muted: #E5E1DA;
+
+  /* Borders */
+  --color-border-light: #E5E1DA;
+  --color-border-dark: #263B4A;
+  --color-border-strong: #20252B;
+
+  /* Status */
+  --color-status-success: #477A62;
+  --color-status-warning: #B58A45;
+  --color-status-danger: #B85C5C;
+  --color-status-info: #263B4A;
+}
+
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-base text-content font-sans antialiased selection:bg-primary selection:text-white;
+  }
+
+  /* Thin grid lines effect utilities */
+  .grid-lines {
+    background-size: 40px 40px;
+    background-image:
+      linear-gradient(to right, var(--color-border-light) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-border-light) 1px, transparent 1px);
+  }
+
+  .grid-lines-dark {
+    background-size: 40px 40px;
+    background-image:
+      linear-gradient(to right, var(--color-border-dark) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-border-dark) 1px, transparent 1px);
+  }
+
+  /* Typography Scale Overrides */
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-semibold;
   }
 }

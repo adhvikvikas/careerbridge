@@ -1,177 +1,150 @@
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '../../components/AdminLayout';
 import { api } from '../../services/api';
-import { Check, X, Search, Loader2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/Table';
+import { StatusBadge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { LoadingState, ErrorState, EmptyState } from '../../components/ui/States';
+import { Link } from 'react-router-dom';
+import { BriefcaseBusiness, Search } from 'lucide-react';
+import { Input } from '../../components/ui/Input';
 
-const AdminJobs = () => {
+export default function AdminJobs() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('PENDING');
-  const [processingId, setProcessingId] = useState(null);
-  
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [targetId, setTargetId] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  useEffect(() => {
+    fetchJobs();
+  }, [statusFilter]);
 
   const fetchJobs = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await api(`/admin/jobs?status=${filter}`);
-      setJobs(data.jobs);
+      const url = statusFilter ? `/admin/jobs?status=${statusFilter}` : '/admin/jobs';
+      const response = await api.get(url);
+      setJobs(response.data.jobs);
+      setError(null);
     } catch (err) {
-      setError(err.message);
+      setError('Failed to fetch jobs');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchJobs();
-  }, [filter]);
+  if (loading && jobs.length === 0) return <LoadingState message="RETRIEVING OPPORTUNITIES..." />;
+  if (error) return <ErrorState message={error} onRetry={fetchJobs} />;
 
-  const handleApprove = async (id) => {
-    try {
-      setProcessingId(id);
-      await api(`/admin/jobs/${id}/approve`, { method: 'PATCH' });
-      fetchJobs();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleRejectClick = (id) => {
-    setTargetId(id);
-    setRejectReason('');
-    setShowRejectModal(true);
-  };
-
-  const confirmReject = async () => {
-    try {
-      if (rejectReason.length < 5) return alert('Reason too short');
-      setProcessingId(targetId);
-      setShowRejectModal(false);
-      await api(`/admin/jobs/${targetId}/reject`, {
-        method: 'PATCH',
-        body: JSON.stringify({ reason: rejectReason })
-      });
-      fetchJobs();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setProcessingId(null);
-      setTargetId(null);
-    }
-  };
+  const filteredJobs = jobs.filter(j =>
+    j.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    j.company?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <AdminLayout title="Manage Jobs">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex gap-2">
-          {['PENDING', 'APPROVED', 'REJECTED'].map(status => (
+    <div className="space-y-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-4">
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary mb-2">
+            JOBS
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-navy mb-2">Opportunity Registry</h1>
+          <p className="text-content-muted text-base max-w-2xl">
+            Review and govern job postings before they become visible to students.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-border-light pb-4">
+        <div className="flex items-center gap-2">
+          {['', 'PENDING', 'APPROVED', 'REJECTED'].map(status => (
             <button
               key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                filter === status 
-                  ? 'bg-primary-600 text-white' 
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+              onClick={() => setStatusFilter(status)}
+              className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
+                statusFilter === status 
+                  ? 'bg-primary text-white shadow-sm' 
+                  : 'text-content-muted hover:text-navy hover:bg-base'
               }`}
             >
-              {status}
+              {status ? status.charAt(0) + status.slice(1).toLowerCase() : 'All'}
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : jobs.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No {filter.toLowerCase()} jobs found.</div>
-        ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                {filter === 'PENDING' && <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {jobs.map(job => (
-                <tr key={job.id}>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{job.title}</div>
-                    <div className="text-sm text-gray-500 line-clamp-1">{job.description}</div>
-                    {job.rejectionReason && (
-                      <div className="text-xs text-red-500 mt-1">Reason: {job.rejectionReason}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{job.company?.name}</div>
-                    <div className="text-xs text-gray-500">Status: {job.company?.status}</div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(job.deadline).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      job.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                      job.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {job.status}
-                    </span>
-                  </td>
-                  {filter === 'PENDING' && (
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <button 
-                        onClick={() => handleApprove(job.id)}
-                        disabled={processingId === job.id}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
-                      >
-                        <Check className="w-4 h-4 mr-1" /> Approve
-                      </button>
-                      <button 
-                        onClick={() => handleRejectClick(job.id)}
-                        disabled={processingId === job.id}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
-                      >
-                        <X className="w-4 h-4 mr-1" /> Reject
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {showRejectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">Reject Job</h3>
-            <textarea
-              className="w-full border border-gray-300 rounded-md p-2 mb-4 h-32"
-              placeholder="Please provide a reason for rejection (min 5 chars)..."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-            ></textarea>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowRejectModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancel</button>
-              <button onClick={confirmReject} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Confirm Rejection</button>
-            </div>
-          </div>
+        <div className="w-full sm:w-72">
+          <Input
+            icon={<Search className="w-4 h-4 text-content-muted" />}
+            placeholder="Search jobs by title, company or keywords..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-white"
+          />
         </div>
-      )}
-    </AdminLayout>
-  );
-};
+      </div>
 
-export default AdminJobs;
+      <div className="bg-white rounded-xl border border-border-light shadow-sm overflow-hidden">
+        {filteredJobs.length === 0 ? (
+          <EmptyState
+            icon={<BriefcaseBusiness className="w-10 h-10" />}
+            title="No Opportunities Found"
+            description="There are currently no job postings matching your criteria."
+          />
+        ) : (
+          <Table>
+            <TableHeader className="bg-base border-b border-border-light">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="font-semibold text-content-muted">Job Title</TableHead>
+                <TableHead className="font-semibold text-content-muted">Company</TableHead>
+                <TableHead className="font-semibold text-content-muted">Min CGPA</TableHead>
+                <TableHead className="font-semibold text-content-muted">Openings</TableHead>
+                <TableHead className="font-semibold text-content-muted">Deadline</TableHead>
+                <TableHead className="font-semibold text-content-muted">Status</TableHead>
+                <TableHead className="text-right font-semibold text-content-muted">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-border-light">
+              {filteredJobs.map(job => (
+                <TableRow key={job.id} className="hover:bg-base/50 transition-colors group">
+                <TableCell className="py-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-base border border-border-light flex items-center justify-center shrink-0">
+                      <span className="font-bold text-navy text-lg">{job.company?.name ? job.company.name.charAt(0).toUpperCase() : 'J'}</span>
+                    </div>
+                    <div>
+                      <div className="font-bold text-navy truncate max-w-[200px]" title={job.title}>{job.title}</div>
+                      <div className="text-xs text-content-muted mt-0.5 truncate max-w-[200px]" title={job.company?.name}>{job.company?.name}</div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="py-4 text-sm text-content-muted">{job.company?.name || '—'}</TableCell>
+                <TableCell className="py-4 text-sm text-content-muted">{job.minCgpa ? job.minCgpa.toFixed(1) : '—'}</TableCell>
+                <TableCell className="py-4 text-sm text-content-muted">{job.openings || '—'}</TableCell>
+                <TableCell className="py-4 text-sm text-content-muted">{new Date(job.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</TableCell>
+                <TableCell className="py-4">
+                  <StatusBadge status={job.status} size="sm" />
+                </TableCell>
+                <TableCell className="py-4 text-right">
+                  <Link to={`/admin/jobs/${job.id}`}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs font-semibold px-4"
+                    >
+                      View
+                    </Button>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        )}
+        <div className="p-4 border-t border-border-light text-xs text-content-muted flex items-center justify-between bg-base/30">
+          Showing {filteredJobs.length} of {jobs.length} opportunities
+        </div>
+      </div>
+
+    </div>
+  );
+}

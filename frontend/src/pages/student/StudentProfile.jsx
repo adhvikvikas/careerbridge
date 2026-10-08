@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import StudentLayout from '../../components/StudentLayout';
-import api from '../../services/api';
+import React, { useState, useEffect } from 'react';
+import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { LoadingState } from '../../components/ui/States';
+import { CheckCircle2, XCircle } from 'lucide-react';
 
-const StudentProfile = () => {
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
+export default function StudentProfile() {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState({
+    name: '',
     branch: '',
     cgpa: '',
     graduationYear: '',
@@ -16,165 +17,234 @@ const StudentProfile = () => {
     backlogs: ''
   });
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [activeTab, setActiveTab] = useState('academic');
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await api.get('/student/profile');
-        setProfile(res.data.profile);
-        setFormData({
-          branch: res.data.profile.branch || '',
-          cgpa: res.data.profile.cgpa || '',
-          graduationYear: res.data.profile.graduationYear || '',
-          resumeUrl: res.data.profile.resumeUrl || '',
-          backlogs: res.data.profile.backlogs ?? 0
-        });
-      } catch (err) {
-        setError('Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProfile();
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const fetchProfile = async () => {
+    try {
+      const response = await api('/student/profile');
+      if (response.success && response.profile) {
+        setProfile({
+          name: response.profile.name || '',
+          branch: response.profile.branch || '',
+          cgpa: response.profile.cgpa || '',
+          graduationYear: response.profile.graduationYear || '',
+          resumeUrl: response.profile.resumeUrl || '',
+          backlogs: response.profile.backlogs ?? 0
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setMessage('');
-    setError('');
-
-    const payload = {};
-    if (formData.branch) payload.branch = formData.branch;
-    if (formData.cgpa) payload.cgpa = parseFloat(formData.cgpa);
-    if (formData.graduationYear) payload.graduationYear = parseInt(formData.graduationYear, 10);
-    payload.resumeUrl = formData.resumeUrl; // Allow empty string
-    if (formData.backlogs !== '') payload.backlogs = parseInt(formData.backlogs, 10);
+    setMessage(null);
 
     try {
-      const res = await api.patch('/student/profile', payload);
-      setProfile(res.data.profile);
-      setMessage('Profile updated successfully');
+      const payload = {
+        ...profile,
+        cgpa: profile.cgpa ? parseFloat(profile.cgpa) : null,
+        graduationYear: profile.graduationYear ? parseInt(profile.graduationYear) : null,
+        backlogs: profile.backlogs !== '' ? parseInt(profile.backlogs) : 0
+      };
+
+      await api('/student/profile', { method: 'PATCH', body: payload });
+      setMessage({ type: 'success', text: 'Profile updated successfully.' });
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update profile');
-      if (err.response?.data?.errors) {
-        setError(err.response.data.errors.map(e => e.message).join(', '));
-      }
+      setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <StudentLayout title="My Profile"><div className="flex justify-center p-8"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div></StudentLayout>;
+  if (loading) return <LoadingState message="Loading Profile..." />;
+
+  const branches = ['CSE', 'ECE', 'MECH', 'CIVIL', 'EEE', 'IT'];
+
+  const profileFields = ['name', 'branch', 'cgpa', 'graduationYear', 'resumeUrl', 'backlogs'];
+  const completedFieldsCount = profileFields.filter(f => profile[f] !== null && profile[f] !== undefined && profile[f] !== '').length;
+  const profileProgress = Math.round((completedFieldsCount / profileFields.length) * 100) || 0;
 
   return (
-    <StudentLayout title="My Profile">
-      <div className="max-w-3xl mx-auto">
-        {message && <div className="mb-4 bg-green-50 text-green-700 p-4 rounded-md">{message}</div>}
-        {error && <div className="mb-4 bg-red-50 text-red-600 p-4 rounded-md">{error}</div>}
+    <div className="space-y-6 pb-12 max-w-4xl mx-auto">
+      <div>
+        <div className="text-xs font-bold uppercase tracking-wider text-primary mb-2">My Profile</div>
+        <h1 className="text-3xl md:text-4xl font-serif font-bold tracking-tight text-navy mb-2">
+          Profile
+        </h1>
+        <p className="text-content-muted">Keep your information updated to improve your chances.</p>
+      </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-medium text-gray-800">Account Information</h2>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                <div className="mt-1 p-2 bg-gray-100 border border-gray-200 rounded-md text-gray-600">{profile?.user?.email}</div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Member Since</label>
-                <div className="mt-1 p-2 bg-gray-100 border border-gray-200 rounded-md text-gray-600">{new Date(profile?.user?.createdAt).toLocaleDateString()}</div>
-              </div>
+      {message && (
+        <div className={`p-4 rounded-xl border text-sm font-medium flex items-center gap-3 ${
+          message.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'
+        }`}>
+          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
+          {message.text}
+        </div>
+      )}
+
+      {/* Top Profile Card */}
+      <Card className="p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-8">
+        <div className="w-24 h-24 bg-navy text-white rounded-full flex items-center justify-center font-bold text-4xl shrink-0 shadow-sm">
+          {user?.email?.[0].toUpperCase() || 'S'}
+        </div>
+        
+        <div className="flex-1 text-center md:text-left w-full">
+          <h2 className="text-2xl font-bold text-navy mb-1">{profile.name || user?.email?.split('@')[0] || 'Student User'}</h2>
+          <p className="text-content-muted mb-6">{user?.email}</p>
+          
+          <div className="w-full max-w-md">
+            <div className="flex justify-between text-sm font-bold text-navy mb-2">
+              <span>Profile Completion</span>
+              <span>{profileProgress}%</span>
             </div>
+            <div className="h-2 w-full bg-base rounded-full overflow-hidden mb-2">
+              <div 
+                className="h-full bg-primary rounded-full transition-all duration-500"
+                style={{ width: `${profileProgress}%` }}
+              />
+            </div>
+            <p className="text-xs text-content-muted">Complete your profile to unlock more opportunities and get better job recommendations.</p>
           </div>
         </div>
+      </Card>
 
-        <form onSubmit={handleSubmit} className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-medium text-gray-800">Academic Profile</h2>
-            <p className="text-sm text-gray-500">Update your details to check job eligibility accurately.</p>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card className="overflow-hidden">
+          <div className="flex border-b border-border-light overflow-x-auto">
+            {['personal', 'academic', 'resume'].map(tab => (
+              <button
+                key={tab}
+                type="button"
+                className={`px-6 py-4 text-sm font-semibold capitalize whitespace-nowrap transition-colors ${
+                  activeTab === tab 
+                    ? 'text-primary border-b-2 border-primary' 
+                    : 'text-content-muted hover:text-navy hover:bg-base'
+                }`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab === 'personal' ? 'Personal Information' : tab === 'academic' ? 'Academic Details' : 'Resume'}
+              </button>
+            ))}
           </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Department / Branch</label>
-                <input
-                  type="text"
-                  name="branch"
-                  value={formData.branch}
-                  onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border p-2"
-                  placeholder="e.g., CSE, IT, ECE"
-                />
+
+          <div className="p-6 md:p-8">
+            {activeTab === 'personal' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-navy mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    value={profile.name}
+                    onChange={(e) => setProfile({...profile, name: e.target.value})}
+                    placeholder="Enter your full name"
+                    className="w-full border border-border-light rounded-md px-3 py-2 text-sm text-navy bg-surface focus:ring-1 focus:ring-primary outline-none mb-4"
+                  />
+                  <label className="block text-sm font-bold text-navy mb-2">Email Address</label>
+                  <input
+                    type="email"
+                    value={user?.email || ''}
+                    disabled
+                    className="w-full border border-border-light rounded-md px-3 py-2 text-sm text-content-muted bg-base cursor-not-allowed"
+                  />
+                  <p className="text-xs text-content-muted mt-1">Email is managed by your institution.</p>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Graduation Year</label>
-                <input
-                  type="number"
-                  name="graduationYear"
-                  value={formData.graduationYear}
-                  onChange={handleChange}
-                  min="2000"
-                  max="2100"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border p-2"
-                />
+            )}
+
+            {activeTab === 'academic' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-navy mb-2">Branch / Department</label>
+                  <select
+                    className="w-full border border-border-light rounded-md px-3 py-2 text-sm text-navy bg-surface focus:ring-1 focus:ring-primary outline-none"
+                    value={profile.branch}
+                    onChange={(e) => setProfile({...profile, branch: e.target.value})}
+                    required
+                  >
+                    <option value="">Select Department</option>
+                    {branches.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-navy mb-2">Graduation Year</label>
+                  <input
+                    type="number"
+                    min="2020"
+                    max="2030"
+                    placeholder="e.g. 2026"
+                    className="w-full border border-border-light rounded-md px-3 py-2 text-sm text-navy bg-surface focus:ring-1 focus:ring-primary outline-none"
+                    value={profile.graduationYear}
+                    onChange={(e) => setProfile({...profile, graduationYear: e.target.value})}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-navy mb-2">Current CGPA</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="10"
+                    placeholder="e.g. 8.5"
+                    className="w-full border border-border-light rounded-md px-3 py-2 text-sm text-navy bg-surface focus:ring-1 focus:ring-primary outline-none"
+                    value={profile.cgpa}
+                    onChange={(e) => setProfile({...profile, cgpa: e.target.value})}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-navy mb-2">Backlogs (if any)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 0"
+                    className="w-full border border-border-light rounded-md px-3 py-2 text-sm text-navy bg-surface focus:ring-1 focus:ring-primary outline-none"
+                    value={profile.backlogs}
+                    onChange={(e) => setProfile({...profile, backlogs: e.target.value})}
+                    required
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">CGPA</label>
+            )}
+
+            {activeTab === 'resume' && (
+              <div className="max-w-xl">
+                <label className="block text-sm font-bold text-navy mb-2">Resume URL</label>
                 <input
-                  type="number"
-                  name="cgpa"
-                  value={formData.cgpa}
-                  onChange={handleChange}
-                  step="0.01"
-                  min="0"
-                  max="10"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border p-2"
+                  type="url"
+                  placeholder="https://drive.google.com/..."
+                  className="w-full border border-border-light rounded-md px-3 py-2 text-sm text-navy bg-surface focus:ring-1 focus:ring-primary outline-none"
+                  value={profile.resumeUrl}
+                  onChange={(e) => setProfile({...profile, resumeUrl: e.target.value})}
                 />
+                <p className="mt-2 text-xs text-content-muted">Provide a link to your hosted resume (e.g., Google Drive, Dropbox). Ensure the link is publicly accessible.</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Active Backlogs</label>
-                <input
-                  type="number"
-                  name="backlogs"
-                  value={formData.backlogs}
-                  onChange={handleChange}
-                  min="0"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border p-2"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Resume URL</label>
-              <input
-                type="url"
-                name="resumeUrl"
-                value={formData.resumeUrl}
-                onChange={handleChange}
-                placeholder="https://link-to-your-resume.pdf"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm border p-2"
-              />
-              <p className="mt-1 text-xs text-gray-500">Provide a link to your hosted resume (e.g., Google Drive link)</p>
-            </div>
+            )}
           </div>
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex justify-center rounded-md border border-transparent bg-primary-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:bg-gray-400"
-            >
-              {saving ? 'Saving...' : 'Save Profile'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </StudentLayout>
+        </Card>
+
+        <div className="flex justify-end pt-2">
+          <Button type="submit" loading={saving} variant="primary" className="px-8 font-bold">
+            Save Changes
+          </Button>
+        </div>
+      </form>
+    </div>
   );
-};
-
-export default StudentProfile;
+}
