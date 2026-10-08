@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { createNotification } = require('../services/notification.service');
 
 // Get the authenticated recruiter's profile & company
 exports.getProfile = async (req, res) => {
@@ -24,6 +25,99 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+// Get the authenticated recruiter's company
+exports.getCompany = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const profile = await prisma.recruiterProfile.findUnique({
+      where: { userId },
+      include: { companies: true }
+    });
+
+    if (!profile || profile.companies.length === 0) {
+      return res.status(404).json({ success: false, message: 'Company not found' });
+    }
+
+    res.json({ success: true, company: profile.companies[0] });
+  } catch (error) {
+    console.error('Error fetching company:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// Create recruiter's company
+exports.createCompany = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const profile = await prisma.recruiterProfile.findUnique({
+      where: { userId },
+      include: { companies: true }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ success: false, message: 'Recruiter profile not found' });
+    }
+
+    if (profile.companies && profile.companies.length > 0) {
+      return res.status(409).json({ success: false, message: 'Company already exists for this recruiter' });
+    }
+
+    const companyData = req.body;
+    const company = await prisma.company.create({
+      data: {
+        name: companyData.name,
+        description: companyData.description,
+        website: companyData.website,
+        industry: companyData.industry,
+        location: companyData.location,
+        status: 'PENDING',
+        recruiterId: profile.id
+      }
+    });
+
+    res.status(201).json({ success: true, company });
+  } catch (error) {
+    console.error('Error creating company:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// Update recruiter's company
+exports.updateCompany = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const updateData = req.body;
+    
+    const profile = await prisma.recruiterProfile.findUnique({
+      where: { userId },
+      include: { companies: true }
+    });
+
+    if (!profile || profile.companies.length === 0) {
+      return res.status(404).json({ success: false, message: 'Company not found' });
+    }
+
+    const companyId = profile.companies[0].id;
+    
+    const updatedCompany = await prisma.company.update({
+      where: { id: companyId },
+      data: {
+        name: updateData.name,
+        description: updateData.description,
+        website: updateData.website,
+        industry: updateData.industry,
+        location: updateData.location
+      }
+    });
+
+    res.json({ success: true, company: updatedCompany });
+  } catch (error) {
+    console.error('Error updating company:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
 // Create a job posting for the recruiter's company
 exports.createJob = async (req, res) => {
   try {
@@ -36,6 +130,9 @@ exports.createJob = async (req, res) => {
 
     if (!profile) {
       return res.status(404).json({ success: false, message: 'Recruiter profile not found' });
+    }
+    if (profile.companies[0].status !== 'APPROVED') {
+      return res.status(403).json({ success: false, message: 'Company must be APPROVED before posting jobs' });
     }
 
     const company = await prisma.company.findFirst({
@@ -55,6 +152,7 @@ exports.createJob = async (req, res) => {
         graduationYears: jobData.graduationYears,
         deadline: new Date(jobData.deadline),
         openings: jobData.openings,
+        employmentType: jobData.employmentType,
         status: 'PENDING', // Always start pending
         companyId: company.id
       }
@@ -188,6 +286,7 @@ exports.updateJob = async (req, res) => {
         graduationYears: updateData.graduationYears,
         deadline: updateData.deadline ? new Date(updateData.deadline) : undefined,
         openings: updateData.openings,
+        employmentType: updateData.employmentType,
         status: newStatus,
         rejectionReason: newStatus === 'PENDING' ? null : job.rejectionReason // Clear rejection reason if re-submitted
       }
@@ -445,6 +544,15 @@ exports.updateApplicationStatus = async (req, res) => {
 
       return app;
     });
+
+    if (application.status !== status) {
+      await createNotification({
+        userId: application.student.userId,
+        type: 'APPLICATION_STATUS_UPDATE',
+        title: 'Application Status Updated',
+        message: `Your application for ${application.job.title} at ${profile.companies[0].name} is now ${status}.`
+      });
+    }
 
     res.json({ success: true, application: updatedApplication });
   } catch (error) {

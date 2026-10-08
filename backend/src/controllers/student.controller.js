@@ -105,6 +105,10 @@ exports.getJobs = async (req, res) => {
       filter.departments = { has: department };
     }
     
+    if (employmentType) {
+      filter.employmentType = employmentType;
+    }
+    
     if (minCgpa) {
       filter.minCgpa = { lte: parseFloat(minCgpa) };
     }

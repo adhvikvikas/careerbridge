@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { createNotification } = require('../services/notification.service');
 
 exports.getCompanies = async (req, res) => {
   try {
@@ -98,6 +99,13 @@ exports.approveCompany = async (req, res) => {
       return comp;
     });
 
+    await createNotification({
+      userId: company.recruiter.userId,
+      type: 'COMPANY_APPROVAL_UPDATE',
+      title: 'Company Approved',
+      message: `Your company ${updatedCompany.name} has been approved. You can now post jobs.`
+    });
+
     res.json({ success: true, company: updatedCompany });
   } catch (error) {
     console.error('Error approving company:', error);
@@ -152,6 +160,13 @@ exports.rejectCompany = async (req, res) => {
       });
       
       return comp;
+    });
+
+    await createNotification({
+      userId: company.recruiter.userId,
+      type: 'COMPANY_APPROVAL_UPDATE',
+      title: 'Company Rejected',
+      message: `Your company ${updatedCompany.name} has been rejected. Reason: ${reason}`
     });
 
     res.json({ success: true, company: updatedCompany });
@@ -263,6 +278,13 @@ exports.approveJob = async (req, res) => {
       return updated;
     });
 
+    await createNotification({
+      userId: job.company.recruiter.userId,
+      type: 'JOB_APPROVAL_UPDATE',
+      title: 'Job Approved',
+      message: `Your job posting "${updatedJob.title}" for ${job.company.name} has been approved.`
+    });
+
     res.json({ success: true, job: updatedJob });
   } catch (error) {
     console.error('Error approving job:', error);
@@ -317,6 +339,13 @@ exports.rejectJob = async (req, res) => {
       });
       
       return updated;
+    });
+
+    await createNotification({
+      userId: job.company.recruiter.userId,
+      type: 'JOB_APPROVAL_UPDATE',
+      title: 'Job Rejected',
+      message: `Your job posting "${updatedJob.title}" for ${job.company.name} has been rejected. Reason: ${reason}`
     });
 
     res.json({ success: true, job: updatedJob });
