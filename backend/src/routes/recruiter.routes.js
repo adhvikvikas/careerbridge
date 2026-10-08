@@ -29,9 +29,11 @@ router.get('/jobs', recruiterController.getJobs);
 router.post('/jobs', validateRequest(jobSchema), recruiterController.createJob);
 router.get('/jobs/:id', recruiterController.getJobDetails);
 router.patch('/jobs/:id', validateRequest(jobSchema), recruiterController.updateJob);
+router.delete('/jobs/:id', recruiterController.archiveJob);
 router.get('/jobs/:jobId/applications', recruiterController.getJobApplications);
 
 // Applications
+router.get('/applications', recruiterController.getAllApplications);
 router.get('/applications/:id', recruiterController.getApplicationDetails);
 router.patch('/applications/:id/status', validateRequest(applicationStatusSchema), recruiterController.updateApplicationStatus);
 router.patch('/applications/:id/notes', validateRequest(applicationNotesSchema), recruiterController.updateApplicationNotes);

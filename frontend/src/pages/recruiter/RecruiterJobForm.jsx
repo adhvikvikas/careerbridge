@@ -94,22 +94,25 @@ export default function RecruiterJobForm() {
     }
   };
 
-  if (loading) return <LoadingState message="LOADING OPPORTUNITY..." />;
+  if (loading) return <LoadingState message="Loading job details..." />;
 
   const branches = ['CSE', 'ECE', 'MECH', 'CIVIL', 'EEE', 'IT'];
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
+    <div className="space-y-8 max-w-5xl mx-auto animate-fade-in">
       <div className="pb-6 border-b border-border-light flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-content mb-2">
-            {isEditing ? 'Edit Opportunity' : 'Post Opportunity'}
+          <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary mb-2">
+            {isEditing ? 'EDIT JOB' : 'NEW JOB'}
+          </div>
+          <h1 className="text-3xl font-serif font-bold text-navy mb-2">
+            {isEditing ? 'Edit Opportunity' : 'Create Job Posting'}
           </h1>
           <p className="text-sm font-medium text-content-muted">
-            Define role parameters and eligibility requirements.
+            Define role parameters and eligibility requirements for applicants.
           </p>
         </div>
-        <Button variant="ghost" onClick={() => navigate('/recruiter/jobs')}>
+        <Button variant="outline" onClick={() => navigate('/recruiter/jobs')}>
           Cancel
         </Button>
       </div>
@@ -131,10 +134,10 @@ export default function RecruiterJobForm() {
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-          <Card>
+          <Card className="border-border-light">
             <CardHeader className="border-b border-border-light bg-base/50">
-              <CardTitle className="flex items-center gap-3">
-                <BriefcaseBusiness className="w-5 h-5 text-content-muted" />
+              <CardTitle className="flex items-center gap-3 text-navy">
+                <BriefcaseBusiness className="w-5 h-5 text-primary" />
                 Role Definition
               </CardTitle>
             </CardHeader>
@@ -190,10 +193,10 @@ export default function RecruiterJobForm() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-border-light">
             <CardHeader className="border-b border-border-light bg-base/50">
-              <CardTitle className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-content-muted" />
+              <CardTitle className="flex items-center gap-3 text-navy">
+                <Users className="w-5 h-5 text-primary" />
                 Eligibility Parameters
               </CardTitle>
             </CardHeader>
@@ -227,7 +230,7 @@ export default function RecruiterJobForm() {
                       <div
                         key={dept}
                         onClick={() => handleDepartmentToggle(dept)}
-                        className={`cursor-pointer px-4 py-3 rounded-lg border text-center transition-colors text-sm font-medium ${
+                        className={`cursor-pointer px-4 py-3 rounded-xl border text-center transition-colors text-sm font-bold ${
                           isSelected
                             ? 'bg-primary/10 text-primary border-primary/30'
                             : 'bg-surface text-content-muted border-border-light hover:border-primary/20'
@@ -249,13 +252,14 @@ export default function RecruiterJobForm() {
 
         </div>
 
-        <div className="flex justify-end pt-6">
+        <div className="flex justify-end pt-4">
           <Button
             type="submit"
             variant="primary"
             size="lg"
             loading={saving}
             disabled={formData.departments.length === 0}
+            className="px-8 shadow-sm"
           >
             {isEditing ? 'Save Changes' : 'Post Opportunity'}
           </Button>

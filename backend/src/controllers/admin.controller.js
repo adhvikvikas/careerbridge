@@ -27,6 +27,33 @@ exports.getCompanies = async (req, res) => {
   }
 };
 
+exports.getCompanyById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const company = await prisma.company.findUnique({
+      where: { id },
+      include: {
+        recruiter: {
+          select: {
+            name: true,
+            phone: true,
+            user: { select: { email: true } }
+          }
+        }
+      }
+    });
+
+    if (!company) {
+      return res.status(404).json({ success: false, message: 'Company not found' });
+    }
+
+    res.json({ success: true, company });
+  } catch (error) {
+    console.error('Error fetching company by id:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
 exports.approveCompany = async (req, res) => {
   try {
     const { id } = req.params;
@@ -102,10 +129,13 @@ exports.rejectCompany = async (req, res) => {
         data: { status: 'REJECTED', rejectionReason: reason }
       });
       
+      const actionStr = company.status === 'APPROVED' ? 'REVOKED' : 'REJECTED';
+      const pastTense = company.status === 'APPROVED' ? 'revoked' : 'rejected';
+      
       await tx.adminActionLog.create({
         data: {
           adminId,
-          action: 'COMPANY_REJECTED',
+          action: `COMPANY_${actionStr}`,
           targetType: 'COMPANY',
           targetId: comp.id,
           reason
@@ -115,9 +145,9 @@ exports.rejectCompany = async (req, res) => {
       await tx.notification.create({
         data: {
           userId: company.recruiter.userId,
-          type: 'COMPANY_REJECTED',
-          title: 'Company Rejected',
-          message: `Your company ${comp.name} was rejected. Reason: ${reason}`
+          type: `COMPANY_${actionStr}`,
+          title: `Company ${actionStr === 'REVOKED' ? 'Revoked' : 'Rejected'}`,
+          message: `Your company ${comp.name} was ${pastTense}. Reason: ${reason}`
         }
       });
       
@@ -149,6 +179,37 @@ exports.getJobs = async (req, res) => {
     res.json({ success: true, jobs });
   } catch (error) {
     console.error('Error fetching jobs:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+exports.getJobById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const job = await prisma.jobPosting.findUnique({
+      where: { id },
+      include: {
+        company: {
+          select: { name: true, status: true, recruiter: true }
+        },
+        applications: {
+          include: {
+            student: {
+              include: { user: { select: { email: true } } }
+            }
+          },
+          orderBy: { appliedAt: 'desc' }
+        }
+      }
+    });
+
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    res.json({ success: true, job });
+  } catch (error) {
+    console.error('Error fetching job by id:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
@@ -233,10 +294,13 @@ exports.rejectJob = async (req, res) => {
         data: { status: 'REJECTED', rejectionReason: reason }
       });
       
+      const actionStr = job.status === 'APPROVED' ? 'REVOKED' : 'REJECTED';
+      const pastTense = job.status === 'APPROVED' ? 'revoked' : 'rejected';
+      
       await tx.adminActionLog.create({
         data: {
           adminId,
-          action: 'JOB_REJECTED',
+          action: `JOB_${actionStr}`,
           targetType: 'JOB',
           targetId: updated.id,
           reason
@@ -246,9 +310,9 @@ exports.rejectJob = async (req, res) => {
       await tx.notification.create({
         data: {
           userId: job.company.recruiter.userId,
-          type: 'JOB_REJECTED',
-          title: 'Job Rejected',
-          message: `Your job posting "${updated.title}" was rejected. Reason: ${reason}`
+          type: `JOB_${actionStr}`,
+          title: `Job ${actionStr === 'REVOKED' ? 'Revoked' : 'Rejected'}`,
+          message: `Your job posting "${updated.title}" was ${pastTense}. Reason: ${reason}`
         }
       });
       
@@ -264,7 +328,13 @@ exports.rejectJob = async (req, res) => {
 
 exports.getAuditLogs = async (req, res) => {
   try {
+    const { targetId, targetType } = req.query;
+    const filter = {};
+    if (targetId) filter.targetId = targetId;
+    if (targetType) filter.targetType = targetType;
+
     const logs = await prisma.adminActionLog.findMany({
+      where: filter,
       include: {
         admin: {
           select: { email: true }

@@ -1,97 +1,120 @@
 # CareerBridge
 
-Institutional Recruitment & Placement Management Platform
+CareerBridge is a professional three-role campus recruitment platform connecting Student Applicants, Company Recruiters, and Placement Cell Administrators. It centralizes and digitizes the institutional placement workflow, replacing fragmented notices and manual approvals with a controlled, audit-friendly digital environment.
 
 ## 1. Project Overview
 
-CareerBridge is a professional three-role campus recruitment platform connecting Student Applicants, Company Recruiters, and Placement Cell Administrators. It centralizes and digitizes the institutional placement workflow, replacing fragmented notices and manual approvals with a controlled, audit-friendly digital environment.
+The platform ensures a fair, transparent, and efficient recruitment process through verified opportunities, strict eligibility constraints (CGPA, Branch, Year), and an auditable approval history.
 
 ## 2. Core User Roles
 
-- **Student:** Can discover approved opport§unities, maintain an academic profile, and apply to eligible jobs.
-- **Recruiter:** Can manage company profiles, publish job postings (with eligibility criteria), and review/progress applicants.
-- **Placement Admin:** Oversees the institutional workflow by approving/rejecting companies and jobs, and maintains an auditable approval history.
+- **Student:** Can discover approved opportunities, maintain an academic profile, check eligibility before applying, and track application progress.
+- **Recruiter:** Can manage company profiles, publish job postings with specific criteria, review student applicants, and manage the hiring pipeline.
+- **Placement Admin:** Oversees the institutional workflow by reviewing and approving companies and jobs before they become visible to students.
 
-## 3. Planned Technology Stack
+## 3. Technology Stack
 
-- **Frontend:** React, Vite, Tailwind CSS, React Router
+- **Frontend:** React, Vite, Tailwind CSS, React Router, Framer Motion
 - **Backend:** Node.js, Express
 - **Database / ORM:** PostgreSQL, Prisma
-- **Auth (Future Phase):** JWT, bcrypt
-- **Validation (Future Phase):** Zod
+- **Authentication:** JWT, bcrypt, Google OAuth
+- **Validation:** Zod
+- **Testing:** Vitest, Supertest
 
 ## 4. Project Structure
 
-The project is structured as a monorepo containing two main parts:
-
+The project is a monorepo containing:
 - `frontend/`: The React SPA (Single Page Application)
 - `backend/`: The Express REST API
-- `docs/`: Project documentation (to be expanded)
 
-## 5. Current Development Phase
-
-**Currently in PHASE 1 - PROJECT FOUNDATION.** 
-*Note: Advanced features like Authentication, Role-Based Access Control, Eligibility Engine, and Application Tracking have NOT been implemented yet.*
-
-## 6. Local Development Prerequisites
+## 5. Prerequisites
 
 - Node.js (v18+ recommended)
-- PostgreSQL (running locally)
+- PostgreSQL (running locally or managed)
 - Git
 
-## 7. Basic Setup
+## 6. Local Development Setup
 
-1. **Clone the repository.**
-2. **Setup Frontend:**
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd careerbridge
+   ```
+
+2. **Backend Setup:**
+   ```bash
+   cd backend
+   npm install
+   ```
+   - Copy `.env.example` to `.env` and fill in local variables (Database URL, JWT Secret, Google Client ID, etc.).
+   - Run migrations and seed the database (do NOT run reset in production):
+   ```bash
+   npx prisma migrate dev
+   npx prisma db seed
+   ```
+   - Start backend:
+   ```bash
+   npm run dev
+   ```
+
+3. **Frontend Setup:**
    ```bash
    cd frontend
    npm install
    ```
-3. **Setup Backend:**
+   - Copy `.env.example` to `.env` and configure `VITE_API_URL` and `VITE_GOOGLE_CLIENT_ID`.
+   - Start frontend:
    ```bash
-   cd backend
-   npm install
-   ```
-4. **Database Configuration:**
-   Copy `backend/.env.example` to `backend/.env` and update `DATABASE_URL` with your local PostgreSQL connection string.
-   ```bash
-   cd backend
-   npx prisma migrate dev --name init
-   npx prisma db seed
+   npm run dev
    ```
 
-## 8. Running the Frontend
+## 7. Demo Credentials
 
-From the `frontend/` directory:
-```bash
-npm run dev
-```
+If the database is seeded, the following demo credentials are available (password is `password123` for all):
+- **Admin:** `admin@example.com`
+- **Recruiter:** `recruiter@example.com`
+- **Student:** `student@example.com`
 
-## 9. Running the Backend
+## 8. Testing
+
+The backend includes a comprehensive test suite covering authentication, RBAC, workflows, and edge cases.
+A separate test database is used to avoid destructive operations on the development environment.
 
 From the `backend/` directory:
 ```bash
-npm run dev
+npm test
 ```
 
-## 10. API Health Check
+## 9. Production Deployment Guide
 
-When the backend is running, verify it by visiting:
-`GET http://localhost:5000/api/health`
+CareerBridge is fully prepared for production deployment.
 
-It should return:
-```json
-{
-  "success": true,
-  "message": "CareerBridge API is running"
-}
+### Architecture Recommendation
+- **Frontend:** Vercel (SPA routing is pre-configured via `vercel.json`)
+- **Backend:** Render, Railway, or Heroku
+- **Database:** Supabase, Neon, or Render PostgreSQL
+
+### Deployment Steps
+1. **Database:** Deploy your managed PostgreSQL instance.
+2. **Backend:**
+   - Set environment variables: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL` (the deployed frontend URL), `GOOGLE_CLIENT_ID`.
+   - The platform natively listens on `process.env.PORT`.
+   - Build step (if any): `npm install`
+   - Pre-start step: Ensure Prisma migrations are deployed safely using `npx prisma migrate deploy` (do NOT use reset).
+   - Start command: `npm start` (which runs `node src/server.js`).
+3. **Frontend:**
+   - Set environment variables: `VITE_API_URL` (the deployed backend URL), `VITE_GOOGLE_CLIENT_ID`.
+   - Build command: `npm run build`
+   - Output directory: `dist`
+4. **Google OAuth Configuration:**
+   - Update your Google Cloud Console OAuth 2.0 Client ID.
+   - Add the deployed Frontend URL to "Authorized JavaScript origins".
+   - (No redirect URI required since it uses the `@react-oauth/google` popup flow).
+
+### Safe Database Migrations
+Always run:
+```bash
+npx prisma validate
+npx prisma migrate deploy
 ```
-
-## 11. Development Roadmap
-
-- **Phase 1: Foundation (Complete)**
-- Phase 2: Authentication & RBAC
-- Phase 3: Admin Governance
-- Phase 4: Recruiter Portal
-- Phase 5: Student Portal
-- Phase 6: Polish & Submission
+*Never run `npx prisma migrate reset` in production.*

@@ -3,7 +3,7 @@ import { api } from '../../services/api';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { LoadingState, ErrorState, EmptyState } from '../../components/ui/States';
-import { Bell, CheckSquare } from 'lucide-react';
+import { Bell, CheckCircle2 } from 'lucide-react';
 
 export default function RecruiterNotifications() {
   const [notifications, setNotifications] = useState([]);
@@ -48,33 +48,36 @@ export default function RecruiterNotifications() {
     }
   };
 
-  if (loading) return <LoadingState message="LOADING NOTIFICATIONS..." />;
+  if (loading) return <LoadingState message="Loading notifications..." />;
   if (error) return <ErrorState message={error} onRetry={fetchNotifications} />;
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto animate-fade-in">
       <div className="pb-6 border-b border-border-light flex items-end justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-content mb-2">Notifications</h1>
+          <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary mb-2">UPDATES</div>
+          <h1 className="text-3xl font-serif font-bold text-navy mb-2">Notifications</h1>
           <p className="text-sm font-medium text-content-muted">System alerts regarding your company and job postings.</p>
         </div>
         {unreadCount > 0 && (
-          <Button variant="outline" size="sm" onClick={markAllAsRead}>
+          <Button variant="outline" size="sm" onClick={markAllAsRead} className="shrink-0 text-primary border-primary/20 hover:bg-primary/5">
             Mark All as Read
           </Button>
         )}
       </div>
 
       {notifications.length === 0 ? (
-        <EmptyState
-          icon={<Bell className="w-10 h-10" />}
-          title="No Notifications"
-          description="You are all caught up! No recent alerts from the administration."
-        />
+        <Card className="p-12 text-center border-border-light">
+          <div className="w-16 h-16 bg-base rounded-full flex items-center justify-center mx-auto mb-4 border border-border-light shadow-sm">
+            <Bell className="w-8 h-8 text-content-muted" />
+          </div>
+          <h3 className="text-lg font-bold text-navy mb-2">No notifications</h3>
+          <p className="text-sm text-content-muted mb-6">You are all caught up! No recent alerts from the administration.</p>
+        </Card>
       ) : (
-        <Card className="divide-y divide-border-light overflow-hidden">
+        <Card className="divide-y divide-border-light overflow-hidden border-border-light">
           {notifications.map(notif => (
             <div 
               key={notif.id} 
@@ -89,14 +92,14 @@ export default function RecruiterNotifications() {
               </div>
               <div className="flex-1">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
-                  <h4 className={`text-base font-bold ${!notif.isRead ? 'text-content' : 'text-content-muted'}`}>
+                  <h4 className={`text-base font-bold ${!notif.isRead ? 'text-navy' : 'text-content-muted'}`}>
                     {notif.title}
                   </h4>
-                  <span className="text-xs font-semibold text-content-muted uppercase tracking-wider shrink-0">
-                    {new Date(notif.createdAt).toLocaleString()}
+                  <span className="text-[11px] font-semibold text-content-muted uppercase tracking-wider shrink-0">
+                    {new Date(notif.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                <p className={`text-sm ${!notif.isRead ? 'text-content font-medium' : 'text-content-muted'}`}>
+                <p className={`text-sm ${!notif.isRead ? 'text-navy font-medium' : 'text-content-muted'}`}>
                   {notif.message}
                 </p>
               </div>
@@ -106,7 +109,7 @@ export default function RecruiterNotifications() {
                   className="shrink-0 p-2 text-content-muted hover:text-primary transition-colors rounded-lg hover:bg-primary/10"
                   title="Mark as read"
                 >
-                  <CheckSquare className="w-5 h-5" />
+                  <CheckCircle2 className="w-5 h-5" />
                 </button>
               )}
             </div>

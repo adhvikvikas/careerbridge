@@ -90,7 +90,7 @@ describe('Recruiter Portal API', () => {
     it('recruiter → recruiter endpoint → allowed (200)', async () => {
       const res = await request(app).get('/api/recruiter/profile').set('Authorization', `Bearer ${recruiter1Token}`);
       expect(res.status).toBe(200);
-      expect(res.body.profile.companies[0].name).toBe('Test Company');
+      expect(res.body.profile.companies[0].name).toBe(company1.name);
     });
   });
 

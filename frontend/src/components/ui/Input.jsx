@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react';
 
-export const Input = forwardRef(({ label, error, className = '', icon, ...props }, ref) => {
+export const Input = forwardRef(({ label, error, className = '', icon, rightElement, ...props }, ref) => {
   return (
     <div className="w-full">
       {label && (
@@ -16,7 +16,7 @@ export const Input = forwardRef(({ label, error, className = '', icon, ...props 
         )}
         <input
           ref={ref}
-          className={`w-full ${icon ? 'pl-10' : 'px-4'} py-2.5 bg-surface border text-sm rounded-md transition-colors
+          className={`w-full ${icon ? 'pl-10' : 'px-4'} ${rightElement ? 'pr-10' : ''} py-2.5 bg-surface border text-sm rounded-md transition-colors
             focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
             disabled:bg-base disabled:text-content-muted
             ${error ? 'border-status-danger focus:ring-status-danger focus:border-status-danger' : 'border-border-light hover:border-border-dark'}
@@ -24,6 +24,11 @@ export const Input = forwardRef(({ label, error, className = '', icon, ...props 
           `}
           {...props}
         />
+        {rightElement && (
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+            {rightElement}
+          </div>
+        )}
       </div>
       {error && <p className="mt-2 text-xs text-status-danger font-medium">{error}</p>}
     </div>

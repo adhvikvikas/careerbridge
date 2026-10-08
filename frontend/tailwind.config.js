@@ -8,32 +8,34 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        serif: ['Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'],
       },
       colors: {
         primary: {
-          DEFAULT: '#4F46E5', // indigo-600
-          dark: '#3730A3', // indigo-800
+          DEFAULT: '#B76E4C', // Muted Terracotta
+          dark: '#A05D3D',
         },
         navy: {
-          DEFAULT: '#0F172A', // slate-900
+          DEFAULT: '#263B4A', // Muted Navy
         },
         surface: {
           DEFAULT: '#FFFFFF',
-          background: '#F8FAFC', // slate-50
+          background: '#F7F5F0', // Warm Ivory
         },
         content: {
-          DEFAULT: '#0F172A', // slate-900
-          secondary: '#475569', // slate-600
-          muted: '#64748B', // slate-500
+          DEFAULT: '#20252B', // Primary Text
+          secondary: '#667085', // Secondary Text
+          muted: '#667085',
         },
         border: {
-          DEFAULT: '#E2E8F0', // slate-200
+          DEFAULT: '#E5E1DA',
+          light: '#E5E1DA',
         },
         status: {
-          success: '#16A34A', // green-600
-          warning: '#D97706', // amber-600
-          danger: '#DC2626', // red-600
-          info: '#2563EB', // blue-600
+          success: '#477A62',
+          warning: '#B58A45',
+          danger: '#B85C5C',
+          info: '#263B4A',
         }
       },
       boxShadow: {

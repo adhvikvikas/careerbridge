@@ -1,21 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../../services/api';
+import api from '../../services/api';
 import { StatusBadge } from '../../components/ui/Badge';
 import { LoadingState, ErrorState } from '../../components/ui/States';
 import { Link } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
-import { ArrowRight } from 'lucide-react';
+import { Card } from '../../components/ui/Card';
+import { ArrowRight, Building2, Briefcase, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
+  const [pendingCompanies, setPendingCompanies] = useState([]);
+  const [pendingJobs, setPendingJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await api.get('/admin/dashboard-stats');
-        setStats(response.data.stats);
+        const [statsRes, companiesRes, jobsRes] = await Promise.all([
+          api.get('/admin/dashboard-stats'),
+          api.get('/admin/companies?status=PENDING'),
+          api.get('/admin/jobs?status=PENDING')
+        ]);
+        setStats(statsRes.data.stats);
+        setPendingCompanies(companiesRes.data.companies || []);
+        setPendingJobs(jobsRes.data.jobs || []);
       } catch (err) {
         setError('Failed to load dashboard statistics.');
       } finally {
@@ -25,92 +34,193 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
-  if (loading) return <LoadingState message="INITIALIZING ADMIN CONSOLE..." />;
+  if (loading) return <LoadingState message="Loading dashboard..." />;
   if (error) return <ErrorState message={error} />;
 
-  return (
-    <div className="space-y-16">
+  const pendingItems = [
+    ...pendingCompanies.map(c => ({
+      type: 'COMPANY',
+      title: c.name,
+      subtitle: c.industry || 'Unknown Industry',
+      submittedBy: c.recruiter?.name || 'Unknown',
+      submittedByEmail: c.recruiter?.user?.email || 'Unknown',
+      status: 'PENDING',
+      submittedOn: c.createdAt,
+      link: `/admin/companies/${c.id}`
+    })),
+    ...pendingJobs.map(j => ({
+      type: 'JOB',
+      title: j.title,
+      subtitle: j.company?.name || 'Unknown Company',
+      submittedBy: j.company?.recruiter?.name || 'Unknown',
+      submittedByEmail: j.company?.recruiter?.user?.email || 'Unknown',
+      status: 'PENDING',
+      submittedOn: j.createdAt,
+      link: `/admin/jobs/${j.id}`
+    }))
+  ].sort((a, b) => new Date(b.submittedOn) - new Date(a.submittedOn));
 
-      {/* Hero Header */}
-      <div className="bg-inverted text-content-inverted p-12 lg:p-24 relative overflow-hidden border border-border-dark">
-        <div className="absolute inset-0 grid-lines-dark opacity-40 pointer-events-none mix-blend-overlay z-0"></div>
-        <div className="relative z-10">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-accent mb-6 border-l-2 border-accent pl-3">
-            System Level: Administration
+  return (
+    <div className="space-y-10 animate-fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary mb-2">
+            ADMINISTRATION
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-none mb-6">
-            PLATFORM GOVERNANCE<br/>
-            <span className="text-content-inverted-muted">COMMAND CENTER</span>
+          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-navy mb-2">
+            Platform Governance
           </h1>
-          <p className="text-sm font-semibold uppercase tracking-widest text-content-inverted-muted max-w-md">
-            Monitor system health and execute required approval workflows.
+          <p className="text-content-muted text-base max-w-2xl">
+            Review and manage company registrations, job postings, and monitor administrative activity.
           </p>
         </div>
       </div>
 
-      {/* Metrics */}
-      <div>
-        <h3 className="text-sm font-bold uppercase tracking-widest text-content-muted mb-6">System Telemetry</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 border border-border-light bg-surface mb-8">
-          <div className="p-8 border-b sm:border-b-0 sm:border-r border-border-light hover:bg-base transition-colors group flex flex-col justify-between">
-            <div className="flex justify-between items-start mb-8">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted group-hover:text-inverted transition-colors">Pending Companies</p>
-              <StatusBadge status="PENDING" />
-            </div>
-            <h3 className="text-5xl font-bold tracking-tighter">{stats.companies.pending}</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Companies Row */}
+        <Card className="p-6 flex items-center gap-4">
+          <div className="w-12 h-12 bg-status-warning/10 text-status-warning rounded-xl flex items-center justify-center shrink-0">
+            <Building2 className="w-6 h-6" />
           </div>
-
-          <div className="p-8 border-b sm:border-b-0 sm:border-r border-border-light hover:bg-base transition-colors group flex flex-col justify-between">
-            <div className="flex justify-between items-start mb-8">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted group-hover:text-inverted transition-colors">Approved Companies</p>
-              <StatusBadge status="APPROVED" />
-            </div>
-            <h3 className="text-5xl font-bold tracking-tighter">{stats.companies.approved}</h3>
+          <div>
+            <p className="text-xs font-bold text-content-muted uppercase tracking-wider mb-1">Pending Companies</p>
+            <h3 className="text-3xl font-bold text-navy leading-none mb-1">{stats.companies.pending}</h3>
+            <p className="text-xs text-content-muted">Needs review</p>
           </div>
+        </Card>
+        
+        <Card className="p-6 flex items-center gap-4">
+          <div className="w-12 h-12 bg-status-success/10 text-status-success rounded-xl flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-content-muted uppercase tracking-wider mb-1">Approved Companies</p>
+            <h3 className="text-3xl font-bold text-navy leading-none mb-1">{stats.companies.approved}</h3>
+            <p className="text-xs text-content-muted">Total approved</p>
+          </div>
+        </Card>
+        
+        <Card className="p-6 flex items-center gap-4">
+          <div className="w-12 h-12 bg-status-danger/10 text-status-danger rounded-xl flex items-center justify-center shrink-0">
+            <XCircle className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-content-muted uppercase tracking-wider mb-1">Rejected Companies</p>
+            <h3 className="text-3xl font-bold text-navy leading-none mb-1">{stats.companies.rejected}</h3>
+            <p className="text-xs text-content-muted">Total rejected</p>
+          </div>
+        </Card>
 
-          <div className="p-8 border-border-light hover:bg-base transition-colors group flex flex-col justify-between">
-            <div className="flex justify-between items-start mb-8">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted group-hover:text-inverted transition-colors">Rejected Companies</p>
-              <StatusBadge status="REJECTED" />
+        {/* Jobs Row */}
+        <Card className="p-6 flex items-center gap-4">
+          <div className="w-12 h-12 bg-status-warning/10 text-status-warning rounded-xl flex items-center justify-center shrink-0">
+            <Briefcase className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-content-muted uppercase tracking-wider mb-1">Pending Jobs</p>
+            <h3 className="text-3xl font-bold text-navy leading-none mb-1">{stats.jobs.pending}</h3>
+            <p className="text-xs text-content-muted">Needs review</p>
+          </div>
+        </Card>
+
+        <Card className="p-6 flex items-center gap-4">
+          <div className="w-12 h-12 bg-status-success/10 text-status-success rounded-xl flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-content-muted uppercase tracking-wider mb-1">Approved Jobs</p>
+            <h3 className="text-3xl font-bold text-navy leading-none mb-1">{stats.jobs.approved}</h3>
+            <p className="text-xs text-content-muted">Total approved</p>
+          </div>
+        </Card>
+
+        <Card className="p-6 flex items-center gap-4">
+          <div className="w-12 h-12 bg-status-danger/10 text-status-danger rounded-xl flex items-center justify-center shrink-0">
+            <XCircle className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-content-muted uppercase tracking-wider mb-1">Rejected Jobs</p>
+            <h3 className="text-3xl font-bold text-navy leading-none mb-1">{stats.jobs.rejected}</h3>
+            <p className="text-xs text-content-muted">Total rejected</p>
+          </div>
+        </Card>
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-6 border-b border-border-light flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Clock className="w-5 h-5 text-status-warning" />
+            <div>
+              <h2 className="text-lg font-bold text-navy">Requires Attention</h2>
+              <p className="text-sm text-content-muted">Items currently waiting for your review.</p>
             </div>
-            <h3 className="text-5xl font-bold tracking-tighter">{stats.companies.rejected}</h3>
+          </div>
+          <div className="flex gap-4 text-sm font-semibold text-primary">
+            <Link to="/admin/companies" className="hover:underline">View all companies &rarr;</Link>
+            <Link to="/admin/jobs" className="hover:underline">View all jobs &rarr;</Link>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-0 border border-border-light bg-surface">
-          <div className="p-8 border-b sm:border-b-0 sm:border-r border-border-light hover:bg-base transition-colors group flex flex-col justify-between">
-            <div className="flex justify-between items-start mb-8">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted group-hover:text-inverted transition-colors">Pending Jobs</p>
-              <StatusBadge status="PENDING" />
+        
+        {pendingItems.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-16 h-16 bg-surface rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-8 h-8 text-status-success" />
             </div>
-            <h3 className="text-5xl font-bold tracking-tighter">{stats.jobs.pending}</h3>
+            <h3 className="text-lg font-bold text-navy mb-2">You're all caught up.</h3>
+            <p className="text-sm text-content-muted max-w-sm mx-auto">
+              There are no companies or job postings waiting for administrative review.
+            </p>
           </div>
-
-          <div className="p-8 border-b sm:border-b-0 sm:border-r border-border-light hover:bg-base transition-colors group flex flex-col justify-between">
-            <div className="flex justify-between items-start mb-8">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted group-hover:text-inverted transition-colors">Approved Jobs</p>
-              <StatusBadge status="APPROVED" />
-            </div>
-            <h3 className="text-5xl font-bold tracking-tighter">{stats.jobs.approved}</h3>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-surface border-b border-border-light text-xs uppercase font-semibold text-content-muted">
+                <tr>
+                  <th className="px-6 py-4">Type</th>
+                  <th className="px-6 py-4">Item</th>
+                  <th className="px-6 py-4">Submitted By</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Submitted On</th>
+                  <th className="px-6 py-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-light">
+                {pendingItems.map((item, idx) => (
+                  <tr key={idx} className="hover:bg-base/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-surface border border-border-light text-xs font-bold text-navy uppercase">
+                        {item.type === 'JOB' ? <Briefcase className="w-3.5 h-3.5 text-primary" /> : <Building2 className="w-3.5 h-3.5 text-primary" />}
+                        {item.type}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-navy">{item.title}</div>
+                      <div className="text-xs text-content-muted mt-0.5">{item.subtitle}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-navy">{item.submittedBy}</div>
+                      <div className="text-xs text-content-muted mt-0.5">{item.submittedByEmail}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={item.status} size="sm" />
+                    </td>
+                    <td className="px-6 py-4 text-content-muted">
+                      {new Date(item.submittedOn).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Link to={item.link}>
+                        <Button variant="outline" size="sm" className="h-8 text-xs font-semibold px-4 text-primary border-primary/20 hover:bg-primary/5">
+                          Review &rarr;
+                        </Button>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-
-          <div className="p-8 border-border-light hover:bg-base transition-colors group flex flex-col justify-between">
-            <div className="flex justify-between items-start mb-8">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-content-muted group-hover:text-inverted transition-colors">Rejected Jobs</p>
-              <StatusBadge status="REJECTED" />
-            </div>
-            <h3 className="text-5xl font-bold tracking-tighter">{stats.jobs.rejected}</h3>
-          </div>
-        </div>
-      </div>
-      <div className="flex gap-4">
-        <Link to="/admin/companies">
-          <Button variant="primary">Manage Companies <ArrowRight className="w-4 h-4 ml-2" /></Button>
-        </Link>
-        <Link to="/admin/jobs">
-          <Button variant="outline">Manage Jobs <ArrowRight className="w-4 h-4 ml-2" /></Button>
-        </Link>
-      </div>
+        )}
+      </Card>
     </div>
   );
 }

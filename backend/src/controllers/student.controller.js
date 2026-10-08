@@ -51,7 +51,7 @@ exports.getDashboardStats = async (req, res) => {
       rejectedApplications,
       savedJobsCount
     ] = await Promise.all([
-      prisma.jobPosting.count({ where: { status: 'APPROVED' } }),
+      prisma.jobPosting.count({ where: { status: 'APPROVED', deletedAt: null } }),
       prisma.application.count({ where: { studentId: student.id } }),
       prisma.application.count({ where: { studentId: student.id, status: 'UNDER_REVIEW' } }),
       prisma.application.count({ where: { studentId: student.id, status: 'SHORTLISTED' } }),
@@ -91,7 +91,7 @@ exports.getJobs = async (req, res) => {
   try {
     const { search, department, employmentType, minCgpa } = req.query;
     
-    const filter = { status: 'APPROVED' };
+    const filter = { status: 'APPROVED', deletedAt: null };
     
     if (search) {
       filter.OR = [
@@ -147,7 +147,7 @@ exports.getJobDetails = async (req, res) => {
     const { id } = req.params;
     
     const job = await prisma.jobPosting.findFirst({
-      where: { id, status: 'APPROVED' },
+      where: { id, status: 'APPROVED', deletedAt: null },
       include: {
         company: {
           select: { name: true, description: true, website: true, location: true, industry: true }
@@ -193,7 +193,7 @@ exports.applyToJob = async (req, res) => {
       where: { id: jobId }
     });
 
-    if (!job) return res.status(404).json({ success: false, message: 'Job not found' });
+    if (!job || job.deletedAt) return res.status(404).json({ success: false, message: 'Job not found' });
     if (job.status !== 'APPROVED') return res.status(403).json({ success: false, message: 'Job is not approved' });
 
     const eligibility = checkEligibility(job, student);
@@ -301,7 +301,7 @@ exports.saveJob = async (req, res) => {
     const student = await prisma.studentProfile.findUnique({ where: { userId: req.user.id } });
 
     const job = await prisma.jobPosting.findUnique({ where: { id: jobId } });
-    if (!job || job.status !== 'APPROVED') {
+    if (!job || job.status !== 'APPROVED' || job.deletedAt) {
       return res.status(404).json({ success: false, message: 'Approved job not found' });
     }
 

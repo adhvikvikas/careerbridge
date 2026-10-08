@@ -4,31 +4,34 @@
   --font-sans: "Inter", "Geist", "Plus Jakarta Sans", sans-serif;
 
   /* Foundation Colors */
-  --color-base: #f8fafc; /* slate-50 - light neutral background */
-  --color-surface: #ffffff; /* white surfaces */
-  --color-inverted: #0f172a; /* deep navy */
-  --color-inverted-surface: #1e293b; /* slate-800 */
+  --color-base: #F7F5F0; /* Warm Ivory */
+  --color-surface: #FFFFFF;
+  --color-inverted: #263B4A; /* Muted Navy */
+  --color-inverted-surface: #1E303D;
 
-  /* Primary: Indigo/Blue */
-  --color-primary: #4f46e5; /* indigo-600 */
-  --color-primary-hover: #4338ca; /* indigo-700 */
+  /* Primary: Muted Terracotta for actions */
+  --color-primary: #B76E4C; 
+  --color-primary-hover: #A05D3D;
+  
+  /* Brand Navy */
+  --color-navy: #263B4A;
 
   /* Text Colors */
-  --color-content: #0f172a; /* dark text */
-  --color-content-muted: #64748b; /* slate muted text */
-  --color-content-inverted: #ffffff;
-  --color-content-inverted-muted: #94a3b8; /* slate-400 */
+  --color-content: #20252B;
+  --color-content-muted: #667085;
+  --color-content-inverted: #FFFFFF;
+  --color-content-inverted-muted: #E5E1DA;
 
   /* Borders */
-  --color-border-light: #e2e8f0; /* slate-200 */
-  --color-border-dark: #334155; /* slate-700 */
-  --color-border-strong: #0f172a; /* slate-900 */
+  --color-border-light: #E5E1DA;
+  --color-border-dark: #263B4A;
+  --color-border-strong: #20252B;
 
   /* Status */
-  --color-status-success: #10b981; /* emerald-500 */
-  --color-status-warning: #f59e0b; /* amber-500 */
-  --color-status-danger: #ef4444; /* red-500 */
-  --color-status-info: #3b82f6; /* blue-500 */
+  --color-status-success: #477A62;
+  --color-status-warning: #B58A45;
+  --color-status-danger: #B85C5C;
+  --color-status-info: #263B4A;
 }
 
 @layer base {

@@ -35,10 +35,34 @@ export const api = async (endpoint, options = {}) => {
   return data;
 };
 
+api.get = async (url) => {
+  const data = await api(url);
+  return { data };
+};
+api.post = async (url, body) => {
+  const data = await api(url, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
+  return { data };
+};
+api.patch = async (url, body) => {
+  const data = await api(url, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined });
+  return { data };
+};
+api.delete = async (url) => {
+  const data = await api(url, { method: 'DELETE' });
+  return { data };
+};
+
 export const login = (email, password) => {
   return api('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
+  });
+};
+
+export const googleLogin = (credential) => {
+  return api('/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ credential }),
   });
 };
 
@@ -47,20 +71,8 @@ export const getMe = () => {
 };
 
 export default {
-  get: async (url) => {
-    const data = await api(url);
-    return { data };
-  },
-  post: async (url, body) => {
-    const data = await api(url, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
-    return { data };
-  },
-  patch: async (url, body) => {
-    const data = await api(url, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined });
-    return { data };
-  },
-  delete: async (url) => {
-    const data = await api(url, { method: 'DELETE' });
-    return { data };
-  }
+  get: api.get,
+  post: api.post,
+  patch: api.patch,
+  delete: api.delete
 };

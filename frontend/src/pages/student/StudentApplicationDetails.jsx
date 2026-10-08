@@ -1,11 +1,63 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../../services/api';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { StatusBadge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { LoadingState, ErrorState } from '../../components/ui/States';
-import { ArrowLeft, MapPin, BriefcaseBusiness, History, Building2 } from 'lucide-react';
+import { ArrowLeft, MapPin, History, ExternalLink, Calendar, BookOpen } from 'lucide-react';
+
+const STATUS_ORDER = ['APPLIED', 'UNDER_REVIEW', 'SHORTLISTED', 'INTERVIEW', 'SELECTED'];
+
+const ProgressTracker = ({ status }) => {
+  if (status === 'REJECTED') {
+    return (
+      <div className="flex items-center w-full mt-6 relative">
+        <div className="absolute top-1.5 left-2 right-2 h-0.5 bg-border-light -z-10" />
+        {STATUS_ORDER.map((step, idx) => {
+          const isFirst = idx === 0;
+          return (
+            <div key={step} className="flex-1 flex flex-col items-center relative">
+              <div className={`w-3 h-3 rounded-full mb-2 ${isFirst ? 'bg-primary' : step === 'SELECTED' ? 'bg-border-light' : 'bg-red-500'}`} />
+              <div className={`text-[10px] font-bold ${isFirst ? 'text-primary' : 'text-content-muted'}`}>
+                {isFirst ? 'Applied' : step === 'SELECTED' ? '' : 'Rejected'}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  const currentIndex = STATUS_ORDER.indexOf(status);
+  
+  return (
+    <div className="flex items-center w-full mt-6 relative">
+      <div className="absolute top-1.5 left-4 right-4 h-0.5 bg-border-light -z-10" />
+      {currentIndex > 0 && (
+        <div 
+          className="absolute top-1.5 left-4 h-0.5 bg-primary -z-10 transition-all duration-500" 
+          style={{ width: `calc(${(currentIndex / (STATUS_ORDER.length - 1)) * 100}% - 32px)` }} 
+        />
+      )}
+      
+      {STATUS_ORDER.map((step, idx) => {
+        const isActive = idx <= currentIndex;
+        const isCurrent = idx === currentIndex;
+        return (
+          <div key={step} className="flex-1 flex flex-col items-center relative">
+            <div className={`w-3.5 h-3.5 rounded-full mb-2 border-2 ${
+              isActive 
+                ? 'bg-primary border-primary' 
+                : 'bg-surface border-border-light'
+            } ${isCurrent ? 'ring-4 ring-primary/20' : ''}`} />
+            <div className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-primary' : 'text-content-muted'}`}>
+              {step.replace('_', ' ')}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 export default function StudentApplicationDetails() {
   const { id } = useParams();
@@ -16,11 +68,14 @@ export default function StudentApplicationDetails() {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const response = await api.get(`/student/applications/${id}`);
-        setApplication(response.data.application);
-        setError(null);
+        const response = await api(`/student/applications/${id}`);
+        if (response.success) {
+          setApplication(response.application);
+        } else {
+          setError('Failed to load application details.');
+        }
       } catch (err) {
-        setError('Failed to load application telemetry.');
+        setError(err.message || 'Failed to load application details.');
       } finally {
         setLoading(false);
       }
@@ -28,102 +83,120 @@ export default function StudentApplicationDetails() {
     fetchDetails();
   }, [id]);
 
-  if (loading) return <LoadingState message="RETRIEVING APPLICATION TELEMETRY..." />;
+  if (loading) return <LoadingState message="Loading Application Details..." />;
   if (error) return <ErrorState message={error} />;
 
-  const { job } = application;
+  const { job, statusHistory } = application;
 
   return (
-    <div className="space-y-8">
-      <Link to="/student/applications">
-        <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />} className="mb-2">
-          Back to Applications
-        </Button>
+    <div className="space-y-6 pb-12 max-w-5xl mx-auto">
+      <Link to="/student/applications" className="inline-flex items-center gap-2 text-sm font-medium text-content-muted hover:text-primary transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Back to Applications
       </Link>
 
-      <div className="bg-surface border border-border-light rounded-2xl p-8 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
-        <div className="relative z-10 flex items-center gap-6">
-          <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center font-bold text-2xl shrink-0">
-            {job.recruiter.companyName[0].toUpperCase()}
+      {/* Header */}
+      <div className="bg-surface border border-border-light rounded-2xl p-6 md:p-8 flex flex-col md:flex-row md:items-start justify-between gap-8 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          <div className="w-16 h-16 bg-base border border-border-light text-navy rounded-xl flex items-center justify-center font-bold text-2xl shrink-0">
+            {job.company?.name?.charAt(0) || 'C'}
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-content mb-1">{job.title}</h1>
-            <p className="text-sm font-medium text-content-muted flex items-center gap-2">
-              <Building2 className="w-4 h-4" /> {job.recruiter.companyName}
+            <h1 className="text-2xl md:text-3xl font-bold text-navy tracking-tight mb-2">{job.title}</h1>
+            <p className="text-lg font-medium text-content-muted mb-4">
+              {job.company?.name} {job.company?.location ? `- ${job.company.location}` : ''}
             </p>
+            <div className="flex gap-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                application.status === 'SELECTED' ? 'bg-green-100 text-green-700' :
+                application.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                application.status === 'SHORTLISTED' || application.status === 'INTERVIEW' ? 'bg-blue-100 text-blue-700' :
+                application.status === 'UNDER_REVIEW' ? 'bg-orange-100 text-orange-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {application.status.replace('_', ' ')}
+              </span>
+            </div>
           </div>
         </div>
-        <div className="relative z-10 flex flex-col items-start md:items-end gap-2 shrink-0">
-          <span className="text-xs font-semibold text-content-muted">Pipeline Status</span>
-          <StatusBadge status={application.status} />
+        
+        <div className="w-full md:w-auto shrink-0 pt-2">
+          <Link to={`/student/jobs/${job.id}`}>
+            <Button variant="outline" className="w-full text-navy border-border-light hover:bg-base font-semibold" icon={<ExternalLink className="w-4 h-4" />}>
+              View Original Posting
+            </Button>
+          </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="md:col-span-2">
-          <Card>
-            <CardHeader className="border-b border-border-light bg-base/50">
-              <CardTitle className="flex items-center gap-3">
-                <History className="w-5 h-5 text-content-muted" />
-                Application Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-6 relative before:absolute before:inset-0 before:ml-3 before:-translate-x-px before:h-full before:w-[2px] before:bg-border-light">
-                {application.statusHistory?.map((history, idx) => (
-                  <div key={history.id} className="relative flex items-center justify-between group pl-10">
-                    <div className="absolute left-0 top-1.5 w-6 h-6 rounded-full border-2 border-surface bg-base flex items-center justify-center shrink-0 z-10">
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                    </div>
-                    <div className="w-full bg-base border border-border-light rounded-xl p-5 hover:border-primary/30 transition-colors">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                        <div className="text-base font-bold text-content">{history.newStatus.replace('_', ' ')}</div>
-                        <time className="text-xs font-medium text-content-muted">
-                          {new Date(history.createdAt).toLocaleString()}
-                        </time>
+      <div className="bg-surface border border-border-light rounded-2xl p-6 md:p-8 shadow-sm">
+        <h3 className="text-lg font-bold text-navy mb-6">Application Progress</h3>
+        <div className="w-full max-w-3xl mx-auto px-4 pb-4">
+          <ProgressTracker status={application.status} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* Timeline */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-surface border border-border-light rounded-2xl p-6 md:p-8 shadow-sm">
+            <h3 className="text-lg font-bold text-navy mb-6 flex items-center gap-2">
+              <History className="w-5 h-5 text-primary" /> Status History
+            </h3>
+            
+            <div className="relative pl-6 before:absolute before:inset-0 before:left-[11px] before:w-px before:bg-border-light before:h-full">
+              {statusHistory?.length === 0 && (
+                <p className="text-sm text-content-muted">No history recorded.</p>
+              )}
+              {statusHistory?.map((history, idx) => (
+                <div key={history.id} className="relative mb-8 last:mb-0">
+                  <div className="absolute -left-6 top-1 w-3 h-3 bg-base border-2 border-primary rounded-full shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-bold text-navy">{history.newStatus.replace('_', ' ')}</h4>
+                    <p className="text-xs font-medium text-content-muted mt-1 mb-2">
+                      {new Date(history.changedAt).toLocaleString()}
+                    </p>
+                    {history.note && (
+                      <div className="bg-base rounded-md p-3 text-sm text-content-muted border border-border-light mt-2">
+                        {history.note}
                       </div>
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div>
-          <Card>
-            <CardHeader className="border-b border-border-light bg-base/50">
-              <CardTitle>Opportunity Meta</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center shrink-0">
-                  <MapPin className="w-5 h-5" />
-                </div>
+        {/* Opportunity Meta */}
+        <div className="space-y-6">
+          <div className="bg-surface border border-border-light rounded-2xl p-6 shadow-sm">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-navy mb-5">Application Details</h3>
+            <div className="space-y-5">
+              <div className="flex gap-4 items-start">
+                <Calendar className="w-5 h-5 text-content-muted shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-medium text-content-muted mb-0.5">Location</p>
-                  <p className="text-sm font-semibold text-content">{job.location}</p>
+                  <div className="text-xs font-semibold text-content-muted mb-0.5">Applied On</div>
+                  <div className="text-sm font-medium text-navy">{new Date(application.appliedAt).toLocaleDateString()}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center shrink-0">
-                  <BriefcaseBusiness className="w-5 h-5" />
-                </div>
+              <div className="flex gap-4 items-start">
+                <MapPin className="w-5 h-5 text-content-muted shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-medium text-content-muted mb-0.5">Classification</p>
-                  <p className="text-sm font-semibold text-content">{job.jobType.replace('_', ' ')}</p>
+                  <div className="text-xs font-semibold text-content-muted mb-0.5">Work Location</div>
+                  <div className="text-sm font-medium text-navy">{job.company?.location || 'N/A'}</div>
                 </div>
               </div>
-              <div className="mt-6 pt-6 border-t border-border-light">
-                <Link to={`/student/jobs/${job.id}`}>
-                  <Button variant="secondary" className="w-full">
-                    View Original Posting
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+              {job.departments?.length > 0 && (
+                <div className="flex gap-4 items-start">
+                  <BookOpen className="w-5 h-5 text-content-muted shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-semibold text-content-muted mb-0.5">Eligible Branches</div>
+                    <div className="text-sm font-medium text-navy">{job.departments.join(', ')}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
