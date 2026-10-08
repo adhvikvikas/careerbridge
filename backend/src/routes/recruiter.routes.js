@@ -21,6 +21,7 @@ router.get('/profile', recruiterController.getProfile);
 router.patch('/profile', validateRequest(require('../validators/recruiter.validator').profileSchema), recruiterController.updateProfile);
 
 // Company
+router.get('/company', recruiterController.getCompany);
 router.post('/company', validateRequest(require('../validators/recruiter.validator').companySchema), recruiterController.createCompany);
 router.patch('/company', validateRequest(require('../validators/recruiter.validator').companySchema), recruiterController.updateCompany);
 

@@ -751,3 +751,23 @@ exports.markAllNotificationsRead = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
+
+
+exports.getCompany = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const profile = await prisma.recruiterProfile.findUnique({
+      where: { userId },
+      include: { companies: true }
+    });
+
+    if (!profile || profile.companies.length === 0) {
+      return res.status(404).json({ success: false, message: 'Company not found' });
+    }
+
+    res.json({ success: true, company: profile.companies[0] });
+  } catch (error) {
+    console.error('Error fetching company:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
