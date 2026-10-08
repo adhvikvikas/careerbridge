@@ -1,185 +1,240 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import StudentLayout from '../../components/StudentLayout';
-import api from '../../services/api';
-import { Search, MapPin, Building, Briefcase, Calendar, Filter } from 'lucide-react';
+import { api } from '../../services/api';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { LoadingState, ErrorState, EmptyState } from '../../components/ui/States';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Search, MapPin, Calendar, Bookmark, RotateCcw } from 'lucide-react';
 
-const StudentJobs = () => {
+export default function StudentJobs() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search');
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [department, setDepartment] = useState('');
-  const [minCgpa, setMinCgpa] = useState('');
+  const [error, setError] = useState(null);
   
+  const [filters, setFilters] = useState({
+    department: '',
+    jobType: '', // NOTE: jobType is not strictly in Prisma schema in this repo, so we won't filter on it backend, maybe client side or ignore
+    minCgpa: '',
+    location: ''
+  });
+
+  useEffect(() => {
+    fetchJobs();
+  }, [filters.department, filters.minCgpa, searchQuery]);
+
   const fetchJobs = async () => {
-    setLoading(true);
     try {
-      const queryParams = new URLSearchParams();
-      if (search) queryParams.append('search', search);
-      if (department) queryParams.append('department', department);
-      if (minCgpa) queryParams.append('minCgpa', minCgpa);
+      setLoading(true);
+      // We pass department and minCgpa if they exist
+      const params = new URLSearchParams();
+      if (filters.department) params.append('department', filters.department);
+      if (filters.minCgpa) params.append('minCgpa', filters.minCgpa);
+      if (searchQuery) params.append('search', searchQuery);
       
-      const res = await api.get(`/student/jobs?${queryParams.toString()}`);
-      setJobs(res.data.jobs);
+      const response = await api(`/student/jobs?${params.toString()}`);
+      if (response.success) {
+        setJobs(response.jobs);
+        setError(null);
+      }
     } catch (err) {
-      console.error('Failed to load jobs', err);
+      setError('Failed to load opportunities.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchJobs();
-    // eslint-disable-next-line
-  }, []);
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    fetchJobs();
+  const handleSaveJob = async (jobId, isCurrentlySaved) => {
+    try {
+      if (isCurrentlySaved) {
+        await api(`/student/jobs/${jobId}/save`, { method: 'DELETE' });
+      } else {
+        await api(`/student/jobs/${jobId}/save`, { method: 'POST' });
+      }
+      // Optimistically update the UI
+      setJobs(prev => prev.map(j => 
+        j.id === jobId ? { ...j, isSaved: !isCurrentlySaved } : j
+      ));
+    } catch (err) {
+      console.error('Failed to toggle save state', err);
+    }
   };
 
+  const handleApply = async (jobId, isEligible) => {
+    if (!isEligible) {
+      alert('You are not eligible for this role based on your profile.');
+      return;
+    }
+    navigate(`/student/jobs/${jobId}`);
+  };
+
+  const resetFilters = () => {
+    setFilters({ department: '', jobType: '', minCgpa: '', location: '' });
+    if (searchQuery) {
+      navigate('/student/jobs');
+    }
+  };
+
+  const filteredJobs = jobs.filter(job => {
+    // Client-side fallback filtering for things not supported by current API easily
+    if (filters.location && job.company?.location !== filters.location) return false;
+    return true;
+  });
+
+  const uniqueLocations = [...new Set(jobs.map(j => j.company?.location).filter(Boolean))];
+  const uniqueDepartments = [...new Set(jobs.flatMap(j => j.departments || []))];
+
+  if (loading && jobs.length === 0) return <LoadingState message="Loading opportunities..." />;
+
   return (
-    <StudentLayout title="Discover Jobs">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-        <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search by title, company, or keywords"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-            />
-          </div>
-          <div className="w-full md:w-48">
-            <input
-              type="text"
-              placeholder="Department (e.g. CSE)"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-            />
-          </div>
-          <div className="w-full md:w-32">
-            <input
-              type="number"
-              step="0.1"
-              placeholder="Min CGPA"
-              value={minCgpa}
-              onChange={(e) => setMinCgpa(e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-            />
-          </div>
-          <button
-            type="submit"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            <Filter className="mr-2 h-4 w-4" /> Filter
-          </button>
-        </form>
+    <div className="space-y-6 pb-12">
+      {/* Header */}
+      <div>
+        <div className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Opportunities</div>
+        <h1 className="text-3xl md:text-4xl font-serif font-bold tracking-tight text-navy mb-2">
+          {searchQuery ? `Search Results: "${searchQuery}"` : 'Browse Opportunities'}
+        </h1>
+        <p className="text-content-muted">Find your next step. Explore jobs from top companies.</p>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center p-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      {/* Filters */}
+      <div className="bg-surface border border-border-light rounded-xl p-4 shadow-sm flex flex-wrap gap-4 items-center">
+        <select 
+          className="border border-border-light rounded-md px-3 py-2 text-sm text-navy bg-base focus:ring-1 focus:ring-primary outline-none"
+          value={filters.department}
+          onChange={(e) => setFilters({ ...filters, department: e.target.value })}
+        >
+          <option value="">All Departments</option>
+          {uniqueDepartments.map(dep => <option key={dep} value={dep}>{dep}</option>)}
+        </select>
+
+        <select 
+          className="border border-border-light rounded-md px-3 py-2 text-sm text-navy bg-base focus:ring-1 focus:ring-primary outline-none"
+          value={filters.minCgpa}
+          onChange={(e) => setFilters({ ...filters, minCgpa: e.target.value })}
+        >
+          <option value="">Min. CGPA</option>
+          <option value="6.0">6.0+</option>
+          <option value="7.0">7.0+</option>
+          <option value="8.0">8.0+</option>
+          <option value="9.0">9.0+</option>
+        </select>
+
+        <select 
+          className="border border-border-light rounded-md px-3 py-2 text-sm text-navy bg-base focus:ring-1 focus:ring-primary outline-none"
+          value={filters.location}
+          onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+        >
+          <option value="">All Locations</option>
+          {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+        </select>
+
+        <button 
+          onClick={resetFilters}
+          className="ml-auto text-sm font-medium text-content-muted hover:text-primary transition-colors flex items-center gap-1.5"
+        >
+          <RotateCcw className="w-4 h-4" /> Reset
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between text-sm text-content-muted font-medium">
+        <div>{filteredJobs.length} opportunities found</div>
+        <div className="flex items-center gap-2">
+          Sort by <span className="text-navy font-bold">Newest First</span>
         </div>
-      ) : jobs.length === 0 ? (
-        <div className="text-center bg-white p-12 rounded-lg border border-gray-200">
-          <Briefcase className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No jobs found</h3>
-          <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filters.</p>
-        </div>
+      </div>
+
+      {error ? (
+        <ErrorState message={error} onRetry={fetchJobs} />
+      ) : filteredJobs.length === 0 ? (
+        <EmptyState
+          icon={<Search className="w-10 h-10" />}
+          title="No Opportunities Found"
+          description="Try adjusting your filters or checking back later."
+          actionText="Reset Filters"
+          onAction={resetFilters}
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {jobs.map((job) => (
-            <div key={job.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-              <div className="p-6 flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{job.title}</h3>
-                  {job.isEligible ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Eligible
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      Not Eligible
+        <div className="space-y-4">
+          {filteredJobs.map(job => (
+            <Card key={job.id} className="p-6 flex flex-col md:flex-row gap-6 hover:border-primary/30 transition-colors">
+              <div className="w-16 h-16 bg-base rounded-xl flex items-center justify-center shrink-0 border border-border-light text-navy font-bold text-2xl">
+                {job.company?.name?.charAt(0) || 'C'}
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-2">
+                  <div>
+                    <h3 className="text-xl font-bold text-navy mb-1">{job.title}</h3>
+                    <div className="text-sm text-content-muted flex items-center gap-2">
+                      <span>{job.company?.name}</span>
+                      <span className="w-1 h-1 rounded-full bg-border-light" />
+                      <span className="flex items-center gap-1 truncate"><MapPin className="w-3.5 h-3.5" /> {job.company?.location || 'Location Not Specified'}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 shrink-0">
+                    <button 
+                      onClick={() => handleSaveJob(job.id, job.isSaved)}
+                      className="text-content-muted hover:text-primary transition-colors"
+                    >
+                      <Bookmark className={`w-5 h-5 ${job.isSaved ? 'fill-primary text-primary' : ''}`} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-4 mt-3">
+                  {job.departments?.length > 0 && (
+                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-semibold border border-blue-100">
+                      {job.departments.join(', ')}
                     </span>
                   )}
-                </div>
-                
-                <div className="flex items-center text-sm text-gray-500 mb-4">
-                  <Building className="flex-shrink-0 mr-1.5 h-4 w-4" />
-                  <span className="line-clamp-1">{job.company.name}</span>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <MapPin className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                    {job.company.location || 'Not specified'}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                    Deadline: {new Date(job.deadline).toLocaleDateString()}
-                  </div>
-                </div>
-
-                <div className="text-sm text-gray-600 line-clamp-3 mb-4">
-                  {job.description}
-                </div>
-
-                <div className="flex flex-wrap gap-2 mt-auto">
+                  {job.graduationYears?.length > 0 && (
+                    <span className="px-2.5 py-1 bg-gray-50 text-content-muted rounded-md text-xs font-semibold border border-border-light">
+                      {job.graduationYears.join(', ')} Batch
+                    </span>
+                  )}
                   {job.minCgpa && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                      CGPA {job.minCgpa}+
-                    </span>
-                  )}
-                  {job.departments && job.departments.slice(0, 2).map(dept => (
-                    <span key={dept} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
-                      {dept}
-                    </span>
-                  ))}
-                  {job.departments && job.departments.length > 2 && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                      +{job.departments.length - 2} more
+                    <span className="px-2.5 py-1 bg-gray-50 text-content-muted rounded-md text-xs font-semibold border border-border-light">
+                      Min. CGPA: {job.minCgpa}
                     </span>
                   )}
                 </div>
-              </div>
-              <div className="bg-gray-50 px-6 py-3 border-t border-gray-200 flex justify-between items-center">
-                <div className="text-sm">
-                  {job.hasApplied ? (
-                    <span className="text-primary-600 font-medium flex items-center">
-                      <CheckCircle className="h-4 w-4 mr-1" /> Applied
-                    </span>
-                  ) : job.isSaved ? (
-                    <span className="text-indigo-600 font-medium flex items-center">
-                      <Bookmark className="h-4 w-4 mr-1" /> Saved
-                    </span>
-                  ) : null}
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-border-light pt-4">
+                  <div className="text-sm text-content-muted flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    Deadline: <span className="font-semibold text-navy">{new Date(job.deadline).toLocaleDateString()}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <Link to={`/student/jobs/${job.id}`}>
+                      <Button variant="outline" className="border-border-light text-navy font-semibold hover:bg-base">
+                        View Details
+                      </Button>
+                    </Link>
+                    {job.hasApplied ? (
+                      <Button variant="outline" disabled className="bg-gray-100 text-gray-500 border-gray-200">
+                        Applied
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="primary" 
+                        onClick={() => handleApply(job.id, job.isEligible)}
+                        className={!job.isEligible ? "opacity-50 cursor-not-allowed" : ""}
+                      >
+                        Apply &rarr;
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <Link
-                  to={`/student/jobs/${job.id}`}
-                  className="text-sm font-medium text-primary-600 hover:text-primary-500"
-                >
-                  View Details &rarr;
-                </Link>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
-    </StudentLayout>
+    </div>
   );
-};
-
-// Helper component for applied badge check
-const CheckCircle = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
-export default StudentJobs;
+}

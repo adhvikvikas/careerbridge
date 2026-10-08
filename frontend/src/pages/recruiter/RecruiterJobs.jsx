@@ -1,116 +1,170 @@
 import React, { useEffect, useState } from 'react';
-import RecruiterLayout from '../../components/RecruiterLayout';
 import { api } from '../../services/api';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/Table';
+import { StatusBadge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { LoadingState, ErrorState, EmptyState } from '../../components/ui/States';
 import { Link } from 'react-router-dom';
-import { Edit2, Users, FileText, Plus } from 'lucide-react';
+import { BriefcaseBusiness, Search, Plus, Filter, ChevronDown } from 'lucide-react';
+import { Card } from '../../components/ui/Card';
 
-const RecruiterJobs = () => {
+export default function RecruiterJobs() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('');
+  const [error, setError] = useState(null);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [sortOrder, setSortOrder] = useState('NEWEST');
 
   useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const query = filter ? `?status=${filter}` : '';
-        const data = await api(`/recruiter/jobs${query}`);
-        setJobs(data.jobs);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchJobs();
-  }, [filter]);
+  }, []);
+
+  const fetchJobs = async () => {
+    try {
+      const response = await api.get('/recruiter/jobs');
+      setJobs(response.data.jobs);
+    } catch (err) {
+      setError('Failed to retrieve job postings.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <LoadingState message="Loading job postings..." />;
+  if (error) return <ErrorState message={error} onRetry={fetchJobs} />;
+
+  const filteredJobs = jobs
+    .filter(job => {
+      if (statusFilter !== 'ALL' && job.status !== statusFilter) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!job.title.toLowerCase().includes(q) && !(job.description && job.description.toLowerCase().includes(q))) {
+          return false;
+        }
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'NEWEST') return new Date(b.createdAt) - new Date(a.createdAt);
+      if (sortOrder === 'OLDEST') return new Date(a.createdAt) - new Date(b.createdAt);
+      return 0;
+    });
 
   return (
-    <RecruiterLayout title="Jobs">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex gap-2">
-          {['', 'PENDING', 'APPROVED', 'REJECTED'].map(status => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                filter === status 
-                  ? 'bg-primary-600 text-white' 
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {status === '' ? 'ALL' : status}
-            </button>
-          ))}
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2">
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary mb-2">JOBS</div>
+          <h1 className="text-3xl font-serif font-bold text-navy mb-2">Job Postings</h1>
+          <p className="text-sm font-medium text-content-muted">Manage your job postings and applicant pipelines.</p>
         </div>
-        <Link 
-          to="/recruiter/jobs/new"
-          className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md font-medium text-sm flex items-center transition"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Post New Job
+        <Link to="/recruiter/jobs/new" className="shrink-0">
+          <Button variant="primary" className="shadow-sm">
+            <Plus className="w-4 h-4 mr-2" /> Create Job
+          </Button>
         </Link>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading jobs...</div>
-        ) : jobs.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 flex flex-col items-center">
-            <FileText className="w-12 h-12 text-gray-300 mb-4" />
-            <p>No jobs found.</p>
-            <Link to="/recruiter/jobs/new" className="mt-4 text-primary-600 font-medium hover:underline">Create your first job posting</Link>
-          </div>
-        ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applicants</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {jobs.map(job => (
-                <tr key={job.id}>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{job.title}</div>
-                    {job.rejectionReason && (
-                      <div className="text-xs text-red-500 mt-1">Reason: {job.rejectionReason}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      job.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                      job.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {job.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(job.deadline).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                    {job._count?.applications || 0}
-                  </td>
-                  <td className="px-6 py-4 text-right space-x-4">
-                    <Link to={`/recruiter/jobs/${job.id}/applications`} className="text-primary-600 hover:text-primary-900 inline-flex items-center text-sm font-medium">
-                      <Users className="w-4 h-4 mr-1" /> View Applicants
-                    </Link>
-                    <Link to={`/recruiter/jobs/${job.id}/edit`} className="text-gray-500 hover:text-gray-900 inline-flex items-center text-sm font-medium">
-                      <Edit2 className="w-4 h-4 mr-1" /> Edit
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-content-muted absolute left-3 top-1/2 -translate-y-1/2" />
+          <input 
+            type="text"
+            placeholder="Search by job title or keywords..."
+            className="w-full pl-9 pr-4 py-2 text-sm bg-surface border border-border-light rounded-md text-navy placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-4">
+          <select 
+            className="px-4 py-2 text-sm font-medium text-navy bg-surface border border-border-light rounded-md hover:bg-base transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="APPROVED">Approved</option>
+            <option value="PENDING">Pending</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+          <select 
+            className="px-4 py-2 text-sm font-medium text-navy bg-surface border border-border-light rounded-md hover:bg-base transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+          >
+            <option value="NEWEST">Sort by Newest</option>
+            <option value="OLDEST">Sort by Oldest</option>
+          </select>
+        </div>
       </div>
-    </RecruiterLayout>
-  );
-};
 
-export default RecruiterJobs;
+      {filteredJobs.length === 0 ? (
+        <Card className="p-12 text-center">
+          <div className="w-16 h-16 bg-base rounded-full flex items-center justify-center mx-auto mb-4 border border-border-light shadow-sm">
+            <BriefcaseBusiness className="w-8 h-8 text-content-muted" />
+          </div>
+          <h3 className="text-lg font-bold text-navy mb-2">No job postings yet</h3>
+          <p className="text-sm text-content-muted mb-6">Create your first opportunity to begin recruiting.</p>
+          <Link to="/recruiter/jobs/new">
+            <Button variant="outline" className="text-primary border-border-light hover:bg-primary/5 hover:border-primary/40">
+              Create Job
+            </Button>
+          </Link>
+        </Card>
+      ) : (
+        <Card className="overflow-hidden">
+          <Table>
+            <TableHeader className="bg-base/50">
+              <TableRow>
+                <TableHead>Job Title</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Deadline</TableHead>
+                <TableHead className="text-center">Applicants</TableHead>
+                <TableHead className="text-right pr-6">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-border-light">
+              {filteredJobs.map(job => (
+                <TableRow key={job.id} className="hover:bg-base/50 transition-colors">
+                  <TableCell className="py-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-base border border-border-light rounded-lg flex items-center justify-center shrink-0 shadow-sm font-bold text-navy">
+                        {job.company?.name?.[0] || 'C'}
+                      </div>
+                      <div>
+                        <div className="font-bold text-navy">{job.title}</div>
+                        <div className="text-xs font-medium text-content-muted mt-0.5">
+                          {job.company?.name || 'Company'}
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={job.status} size="sm" />
+                  </TableCell>
+                  <TableCell className="text-sm font-medium text-content-muted">
+                    {new Date(job.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="inline-flex items-center justify-center px-2 py-1 bg-base border border-border-light rounded-md text-xs font-bold text-navy min-w-[2rem]">
+                      {job._count?.applications || 0}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right pr-6">
+                    <Link to={`/recruiter/jobs/${job.id}`}>
+                      <Button variant="outline" size="sm" className="h-8 px-4 text-xs font-semibold">
+                        View
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+    </div>
+  );
+}

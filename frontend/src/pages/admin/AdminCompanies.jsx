@@ -1,177 +1,157 @@
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '../../components/AdminLayout';
 import { api } from '../../services/api';
-import { Check, X, Search, Loader2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/Table';
+import { StatusBadge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { LoadingState, ErrorState, EmptyState } from '../../components/ui/States';
+import { Building2, Search, Filter } from 'lucide-react';
+import { Input } from '../../components/ui/Input';
+import { Link } from 'react-router-dom';
 
-const AdminCompanies = () => {
+export default function AdminCompanies() {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('PENDING');
-  const [processingId, setProcessingId] = useState(null);
-  
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [targetId, setTargetId] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  useEffect(() => {
+    fetchCompanies();
+  }, [statusFilter]);
 
   const fetchCompanies = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await api(`/admin/companies?status=${filter}`);
-      setCompanies(data.companies);
+      const url = statusFilter ? `/admin/companies?status=${statusFilter}` : '/admin/companies';
+      const response = await api.get(url);
+      setCompanies(response.data.companies);
+      setError(null);
     } catch (err) {
-      setError(err.message);
+      setError('Failed to fetch companies');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchCompanies();
-  }, [filter]);
+  if (loading && companies.length === 0) return <LoadingState message="RETRIEVING REGISTRY..." />;
+  if (error) return <ErrorState message={error} onRetry={fetchCompanies} />;
 
-  const handleApprove = async (id) => {
-    try {
-      setProcessingId(id);
-      await api(`/admin/companies/${id}/approve`, { method: 'PATCH' });
-      fetchCompanies();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleRejectClick = (id) => {
-    setTargetId(id);
-    setRejectReason('');
-    setShowRejectModal(true);
-  };
-
-  const confirmReject = async () => {
-    try {
-      if (rejectReason.length < 5) return alert('Reason too short');
-      setProcessingId(targetId);
-      setShowRejectModal(false);
-      await api(`/admin/companies/${targetId}/reject`, {
-        method: 'PATCH',
-        body: JSON.stringify({ reason: rejectReason })
-      });
-      fetchCompanies();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setProcessingId(null);
-      setTargetId(null);
-    }
-  };
+  const filteredCompanies = companies.filter(c =>
+    c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.recruiter?.user?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.recruiter?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <AdminLayout title="Manage Companies">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex gap-2">
-          {['PENDING', 'APPROVED', 'REJECTED'].map(status => (
+    <div className="space-y-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-4">
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary mb-2">
+            COMPANIES
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-navy mb-2">Company Registry</h1>
+          <p className="text-content-muted text-base max-w-2xl">
+            Review and govern organizations participating in the CareerBridge platform.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-border-light pb-4">
+        <div className="flex items-center gap-2">
+          {['', 'PENDING', 'APPROVED', 'REJECTED'].map(status => (
             <button
               key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                filter === status 
-                  ? 'bg-primary-600 text-white' 
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+              onClick={() => setStatusFilter(status)}
+              className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
+                statusFilter === status 
+                  ? 'bg-primary text-white shadow-sm' 
+                  : 'text-content-muted hover:text-navy hover:bg-base'
               }`}
             >
-              {status}
+              {status ? status.charAt(0) + status.slice(1).toLowerCase() : 'All'}
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : companies.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No {filter.toLowerCase()} companies found.</div>
-        ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recruiter</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Industry</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                {filter === 'PENDING' && <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {companies.map(company => (
-                <tr key={company.id}>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{company.name}</div>
-                    <div className="text-sm text-gray-500">{company.location || 'No location'}</div>
-                    {company.rejectionReason && (
-                      <div className="text-xs text-red-500 mt-1">Reason: {company.rejectionReason}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{company.recruiter?.name}</div>
-                    <div className="text-sm text-gray-500">{company.recruiter?.user?.email}</div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {company.industry || '-'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      company.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                      company.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {company.status}
-                    </span>
-                  </td>
-                  {filter === 'PENDING' && (
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <button 
-                        onClick={() => handleApprove(company.id)}
-                        disabled={processingId === company.id}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
-                      >
-                        <Check className="w-4 h-4 mr-1" /> Approve
-                      </button>
-                      <button 
-                        onClick={() => handleRejectClick(company.id)}
-                        disabled={processingId === company.id}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
-                      >
-                        <X className="w-4 h-4 mr-1" /> Reject
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {showRejectModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">Reject Company</h3>
-            <textarea
-              className="w-full border border-gray-300 rounded-md p-2 mb-4 h-32"
-              placeholder="Please provide a reason for rejection (min 5 chars)..."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-            ></textarea>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowRejectModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancel</button>
-              <button onClick={confirmReject} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Confirm Rejection</button>
-            </div>
-          </div>
+        <div className="w-full sm:w-72">
+          <Input
+            icon={<Search className="w-4 h-4 text-content-muted" />}
+            placeholder="Search companies by name, recruiter or keywords..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-white"
+          />
         </div>
-      )}
-    </AdminLayout>
-  );
-};
+      </div>
 
-export default AdminCompanies;
+      <div className="bg-white rounded-xl border border-border-light shadow-sm overflow-hidden">
+        {filteredCompanies.length === 0 ? (
+          <EmptyState
+            icon={<Building2 className="w-10 h-10" />}
+            title="No Companies Found"
+            description="There are currently no companies matching your criteria."
+          />
+        ) : (
+          <Table>
+            <TableHeader className="bg-base border-b border-border-light">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="font-semibold text-content-muted">Company Name</TableHead>
+                <TableHead className="font-semibold text-content-muted">Industry</TableHead>
+                <TableHead className="font-semibold text-content-muted">Location</TableHead>
+                <TableHead className="font-semibold text-content-muted">Recruiter</TableHead>
+                <TableHead className="font-semibold text-content-muted">Status</TableHead>
+                <TableHead className="text-right font-semibold text-content-muted">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-border-light">
+            {filteredCompanies.map(company => (
+              <TableRow key={company.id} className="hover:bg-base/50 transition-colors group">
+                <TableCell className="py-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-base border border-border-light flex items-center justify-center shrink-0">
+                      <span className="font-bold text-navy text-lg">{company.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div>
+                      <div className="font-bold text-navy">{company.name}</div>
+                      {company.website && (
+                        <a href={company.website} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline mt-0.5 block truncate max-w-[150px]">
+                          {company.website}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="py-4 text-sm text-content-muted">{company.industry || '—'}</TableCell>
+                <TableCell className="py-4 text-sm text-content-muted max-w-[150px] truncate">{company.location || '—'}</TableCell>
+                <TableCell className="py-4">
+                  <div className="text-sm font-bold text-navy">{company.recruiter?.name}</div>
+                  <div className="text-xs text-content-muted mt-0.5">{company.recruiter?.user?.email}</div>
+                  <div className="text-xs text-content-muted mt-0.5">{company.recruiter?.phone}</div>
+                </TableCell>
+                <TableCell className="py-4">
+                  <StatusBadge status={company.status} size="sm" />
+                </TableCell>
+                <TableCell className="py-4 text-right">
+                  <Link to={`/admin/companies/${company.id}`}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs font-semibold px-4"
+                    >
+                      View
+                    </Button>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        )}
+        <div className="p-4 border-t border-border-light text-xs text-content-muted flex items-center justify-between bg-base/30">
+          Showing {filteredCompanies.length} of {companies.length} companies
+        </div>
+      </div>
+
+    </div>
+  );
+}
