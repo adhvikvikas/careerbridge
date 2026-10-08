@@ -1,204 +1,151 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api } from '../../services/api';
-import { Button } from '../../components/ui/Button';
-import { LoadingState, ErrorState } from '../../components/ui/States';
-import { ArrowLeft, MapPin, History, ExternalLink, Calendar, BookOpen } from 'lucide-react';
+import StudentLayout from '../../components/StudentLayout';
+import api from '../../services/api';
+import { Building, MapPin, Calendar, Clock, CheckCircle } from 'lucide-react';
 
-const STATUS_ORDER = ['APPLIED', 'UNDER_REVIEW', 'SHORTLISTED', 'INTERVIEW', 'SELECTED'];
-
-const ProgressTracker = ({ status }) => {
-  if (status === 'REJECTED') {
-    return (
-      <div className="flex items-center w-full mt-6 relative">
-        <div className="absolute top-1.5 left-2 right-2 h-0.5 bg-border-light -z-10" />
-        {STATUS_ORDER.map((step, idx) => {
-          const isFirst = idx === 0;
-          return (
-            <div key={step} className="flex-1 flex flex-col items-center relative">
-              <div className={`w-3 h-3 rounded-full mb-2 ${isFirst ? 'bg-primary' : step === 'SELECTED' ? 'bg-border-light' : 'bg-red-500'}`} />
-              <div className={`text-[10px] font-bold ${isFirst ? 'text-primary' : 'text-content-muted'}`}>
-                {isFirst ? 'Applied' : step === 'SELECTED' ? '' : 'Rejected'}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
-  const currentIndex = STATUS_ORDER.indexOf(status);
-  
-  return (
-    <div className="flex items-center w-full mt-6 relative">
-      <div className="absolute top-1.5 left-4 right-4 h-0.5 bg-border-light -z-10" />
-      {currentIndex > 0 && (
-        <div 
-          className="absolute top-1.5 left-4 h-0.5 bg-primary -z-10 transition-all duration-500" 
-          style={{ width: `calc(${(currentIndex / (STATUS_ORDER.length - 1)) * 100}% - 32px)` }} 
-        />
-      )}
-      
-      {STATUS_ORDER.map((step, idx) => {
-        const isActive = idx <= currentIndex;
-        const isCurrent = idx === currentIndex;
-        return (
-          <div key={step} className="flex-1 flex flex-col items-center relative">
-            <div className={`w-3.5 h-3.5 rounded-full mb-2 border-2 ${
-              isActive 
-                ? 'bg-primary border-primary' 
-                : 'bg-surface border-border-light'
-            } ${isCurrent ? 'ring-4 ring-primary/20' : ''}`} />
-            <div className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-primary' : 'text-content-muted'}`}>
-              {step.replace('_', ' ')}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-export default function StudentApplicationDetails() {
+const StudentApplicationDetails = () => {
   const { id } = useParams();
-  const [application, setApplication] = useState(null);
+  const [app, setApp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchDetails = async () => {
+    const fetchApplication = async () => {
       try {
-        const response = await api(`/student/applications/${id}`);
-        if (response.success) {
-          setApplication(response.application);
-        } else {
-          setError('Failed to load application details.');
-        }
+        const res = await api.get(`/student/applications/${id}`);
+        setApp(res.data.application);
       } catch (err) {
-        setError(err.message || 'Failed to load application details.');
+        setError('Failed to load application details');
       } finally {
         setLoading(false);
       }
     };
-    fetchDetails();
+    fetchApplication();
   }, [id]);
 
-  if (loading) return <LoadingState message="Loading Application Details..." />;
-  if (error) return <ErrorState message={error} />;
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'APPLIED':
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Applied</span>;
+      case 'UNDER_REVIEW':
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Under Review</span>;
+      case 'SHORTLISTED':
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Shortlisted</span>;
+      case 'INTERVIEW':
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">Interview</span>;
+      case 'SELECTED':
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Selected</span>;
+      case 'REJECTED':
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>;
+      default:
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{status}</span>;
+    }
+  };
 
-  const { job, statusHistory } = application;
+  if (loading) return <StudentLayout title="Application Details"><div className="flex justify-center p-8"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div></StudentLayout>;
+  if (error) return <StudentLayout title="Application Details"><div className="bg-red-50 text-red-600 p-4 rounded-md">{error}</div></StudentLayout>;
+  if (!app) return <StudentLayout title="Application Details"><div className="text-gray-500">Not found</div></StudentLayout>;
 
   return (
-    <div className="space-y-6 pb-12 max-w-5xl mx-auto">
-      <Link to="/student/applications" className="inline-flex items-center gap-2 text-sm font-medium text-content-muted hover:text-primary transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Back to Applications
-      </Link>
-
-      {/* Header */}
-      <div className="bg-surface border border-border-light rounded-2xl p-6 md:p-8 flex flex-col md:flex-row md:items-start justify-between gap-8 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="w-16 h-16 bg-base border border-border-light text-navy rounded-xl flex items-center justify-center font-bold text-2xl shrink-0">
-            {job.company?.name?.charAt(0) || 'C'}
-          </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-navy tracking-tight mb-2">{job.title}</h1>
-            <p className="text-lg font-medium text-content-muted mb-4">
-              {job.company?.name} {job.company?.location ? `- ${job.company.location}` : ''}
-            </p>
-            <div className="flex gap-2">
-              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                application.status === 'SELECTED' ? 'bg-green-100 text-green-700' :
-                application.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                application.status === 'SHORTLISTED' || application.status === 'INTERVIEW' ? 'bg-blue-100 text-blue-700' :
-                application.status === 'UNDER_REVIEW' ? 'bg-orange-100 text-orange-700' :
-                'bg-gray-100 text-gray-700'
-              }`}>
-                {application.status.replace('_', ' ')}
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="w-full md:w-auto shrink-0 pt-2">
-          <Link to={`/student/jobs/${job.id}`}>
-            <Button variant="outline" className="w-full text-navy border-border-light hover:bg-base font-semibold" icon={<ExternalLink className="w-4 h-4" />}>
-              View Original Posting
-            </Button>
-          </Link>
-        </div>
+    <StudentLayout title="Application Details">
+      <div className="mb-6">
+        <Link to="/student/applications" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+          &larr; Back to Applications
+        </Link>
       </div>
 
-      <div className="bg-surface border border-border-light rounded-2xl p-6 md:p-8 shadow-sm">
-        <h3 className="text-lg font-bold text-navy mb-6">Application Progress</h3>
-        <div className="w-full max-w-3xl mx-auto px-4 pb-4">
-          <ProgressTracker status={application.status} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Timeline */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-surface border border-border-light rounded-2xl p-6 md:p-8 shadow-sm">
-            <h3 className="text-lg font-bold text-navy mb-6 flex items-center gap-2">
-              <History className="w-5 h-5 text-primary" /> Status History
-            </h3>
-            
-            <div className="relative pl-6 before:absolute before:inset-0 before:left-[11px] before:w-px before:bg-border-light before:h-full">
-              {statusHistory?.length === 0 && (
-                <p className="text-sm text-content-muted">No history recorded.</p>
-              )}
-              {statusHistory?.map((history, idx) => (
-                <div key={history.id} className="relative mb-8 last:mb-0">
-                  <div className="absolute -left-6 top-1 w-3 h-3 bg-base border-2 border-primary rounded-full shrink-0" />
-                  <div>
-                    <h4 className="text-sm font-bold text-navy">{history.newStatus.replace('_', ' ')}</h4>
-                    <p className="text-xs font-medium text-content-muted mt-1 mb-2">
-                      {new Date(history.changedAt).toLocaleString()}
-                    </p>
-                    {history.note && (
-                      <div className="bg-base rounded-md p-3 text-sm text-content-muted border border-border-light mt-2">
-                        {history.note}
-                      </div>
-                    )}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-8">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 mb-2">{app.job.title}</h1>
+                  <div className="flex items-center text-lg text-gray-600 font-medium">
+                    <Building className="mr-2 h-5 w-5" />
+                    {app.job.company.name}
                   </div>
                 </div>
-              ))}
+                {getStatusBadge(app.status)}
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 border-y border-gray-100 py-6">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 flex items-center mb-1">
+                    <MapPin className="mr-1.5 h-4 w-4 text-gray-400" /> Location
+                  </p>
+                  <p className="text-sm text-gray-900 font-medium">{app.job.company.location || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 flex items-center mb-1">
+                    <Calendar className="mr-1.5 h-4 w-4 text-gray-400" /> Applied On
+                  </p>
+                  <p className="text-sm text-gray-900 font-medium">{new Date(app.appliedAt).toLocaleDateString()}</p>
+                </div>
+                <div className="md:col-span-1 col-span-2">
+                  <Link to={`/student/jobs/${app.job.id}`} className="text-sm text-primary-600 hover:underline font-medium">
+                    View Job Posting &rarr;
+                  </Link>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Application Timeline</h3>
+                <div className="flow-root">
+                  <ul className="-mb-8">
+                    {app.statusHistory.map((history, idx) => (
+                      <li key={history.id}>
+                        <div className="relative pb-8">
+                          {idx !== app.statusHistory.length - 1 ? (
+                            <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true" />
+                          ) : null}
+                          <div className="relative flex space-x-3">
+                            <div>
+                              <span className="h-8 w-8 rounded-full bg-primary-50 flex items-center justify-center ring-8 ring-white">
+                                <Clock className="h-4 w-4 text-primary-600" />
+                              </span>
+                            </div>
+                            <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                              <div>
+                                <p className="text-sm text-gray-500">
+                                  Status changed to <span className="font-medium text-gray-900">{history.newStatus}</span>
+                                </p>
+                              </div>
+                              <div className="whitespace-nowrap text-right text-sm text-gray-500">
+                                <time dateTime={history.changedAt}>{new Date(history.changedAt).toLocaleString()}</time>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Opportunity Meta */}
-        <div className="space-y-6">
-          <div className="bg-surface border border-border-light rounded-2xl p-6 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-navy mb-5">Application Details</h3>
-            <div className="space-y-5">
-              <div className="flex gap-4 items-start">
-                <Calendar className="w-5 h-5 text-content-muted shrink-0 mt-0.5" />
+        <div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-base font-medium text-gray-900">Important Info</h3>
+            </div>
+            <div className="p-6">
+              <div className="flex items-start">
+                <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
                 <div>
-                  <div className="text-xs font-semibold text-content-muted mb-0.5">Applied On</div>
-                  <div className="text-sm font-medium text-navy">{new Date(application.appliedAt).toLocaleDateString()}</div>
+                  <p className="text-sm font-medium text-gray-900">Application Submitted</p>
+                  <p className="text-sm text-gray-500 mt-1">Your application was successfully sent to {app.job.company.name}. They will review it based on their timeline.</p>
                 </div>
               </div>
-              <div className="flex gap-4 items-start">
-                <MapPin className="w-5 h-5 text-content-muted shrink-0 mt-0.5" />
-                <div>
-                  <div className="text-xs font-semibold text-content-muted mb-0.5">Work Location</div>
-                  <div className="text-sm font-medium text-navy">{job.company?.location || 'N/A'}</div>
-                </div>
-              </div>
-              {job.departments?.length > 0 && (
-                <div className="flex gap-4 items-start">
-                  <BookOpen className="w-5 h-5 text-content-muted shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-xs font-semibold text-content-muted mb-0.5">Eligible Branches</div>
-                    <div className="text-sm font-medium text-navy">{job.departments.join(', ')}</div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </StudentLayout>
   );
-}
+};
+
+export default StudentApplicationDetails;

@@ -125,23 +125,18 @@ exports.createJob = async (req, res) => {
     const jobData = req.body;
 
     const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
+      where: { userId },
+      include: { companies: true }
     });
 
-    if (!profile) {
-      return res.status(404).json({ success: false, message: 'Recruiter profile not found' });
+    if (!profile || profile.companies.length === 0) {
+      return res.status(404).json({ success: false, message: 'Company not found for this recruiter' });
     }
     if (profile.companies[0].status !== 'APPROVED') {
       return res.status(403).json({ success: false, message: 'Company must be APPROVED before posting jobs' });
     }
 
-    const company = await prisma.company.findFirst({
-      where: { recruiterId: profile.id }
-    });
-
-    if (!company) {
-      return res.status(404).json({ success: false, message: 'Company not found for this recruiter' });
-    }
+    const companyId = profile.companies[0].id; // Assuming one company per recruiter for now
 
     const job = await prisma.jobPosting.create({
       data: {
@@ -154,7 +149,7 @@ exports.createJob = async (req, res) => {
         openings: jobData.openings,
         employmentType: jobData.employmentType,
         status: 'PENDING', // Always start pending
-        companyId: company.id
+        companyId: companyId
       }
     });
 
@@ -171,19 +166,18 @@ exports.getJobs = async (req, res) => {
     const userId = req.user.id;
     
     const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
+      where: { userId },
+      include: { companies: true }
     });
 
-    if (!profile) {
-      return res.status(404).json({ success: false, message: 'Recruiter profile not found' });
+    if (!profile || profile.companies.length === 0) {
+      return res.json({ success: true, jobs: [] });
     }
 
+    const companyId = profile.companies[0].id;
     const { status } = req.query;
 
-    const filter = { 
-      company: { recruiterId: profile.id },
-      deletedAt: null
-    };
+    const filter = { companyId };
     if (status) filter.status = status;
 
     const jobs = await prisma.jobPosting.findMany({
@@ -210,24 +204,24 @@ exports.getJobDetails = async (req, res) => {
     const userId = req.user.id;
 
     const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
+      where: { userId },
+      include: { companies: true }
     });
 
-    if (!profile) {
+    if (!profile || profile.companies.length === 0) {
       return res.status(403).json({ success: false, message: 'Unauthorized access' });
     }
 
-    const job = await prisma.jobPosting.findFirst({
-      where: { 
-        id,
-        company: { recruiterId: profile.id }
-      },
+    const companyId = profile.companies[0].id;
+
+    const job = await prisma.jobPosting.findUnique({
+      where: { id },
       include: {
         _count: { select: { applications: true } }
       }
     });
 
-    if (!job) {
+    if (!job || job.companyId !== companyId) {
       return res.status(404).json({ success: false, message: 'Job not found' });
     }
 
@@ -246,26 +240,20 @@ exports.updateJob = async (req, res) => {
     const updateData = req.body;
 
     const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
+      where: { userId },
+      include: { companies: true }
     });
 
-    if (!profile) {
+    if (!profile || profile.companies.length === 0) {
       return res.status(403).json({ success: false, message: 'Unauthorized access' });
     }
 
-    const job = await prisma.jobPosting.findFirst({
-      where: { 
-        id,
-        company: { recruiterId: profile.id }
-      }
-    });
+    const companyId = profile.companies[0].id;
 
-    if (!job) {
+    const job = await prisma.jobPosting.findUnique({ where: { id } });
+
+    if (!job || job.companyId !== companyId) {
       return res.status(404).json({ success: false, message: 'Job not found' });
-    }
-
-    if (job.deletedAt) {
-      return res.status(403).json({ success: false, message: 'Cannot edit an archived job' });
     }
 
     // Do not allow bypassing approval
@@ -299,87 +287,6 @@ exports.updateJob = async (req, res) => {
   }
 };
 
-// Archive job
-exports.archiveJob = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
-
-    const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
-    });
-
-    if (!profile) {
-      return res.status(403).json({ success: false, message: 'Unauthorized access' });
-    }
-
-    const job = await prisma.jobPosting.findFirst({
-      where: { 
-        id,
-        company: { recruiterId: profile.id },
-        deletedAt: null
-      }
-    });
-
-    if (!job) {
-      return res.status(404).json({ success: false, message: 'Job not found or already archived' });
-    }
-
-    const archivedJob = await prisma.jobPosting.update({
-      where: { id },
-      data: { deletedAt: new Date() }
-    });
-
-    res.json({ success: true, job: archivedJob });
-  } catch (error) {
-    console.error('Error archiving job:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-};
-
-// Get all applications across all jobs for the recruiter's company
-exports.getAllApplications = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
-    });
-
-    if (!profile) {
-      return res.status(403).json({ success: false, message: 'Unauthorized access' });
-    }
-
-    const { status, name } = req.query;
-    
-    let filter = { job: { company: { recruiterId: profile.id } } };
-    if (status) filter.status = status;
-    if (name) {
-      filter.student = {
-        user: { email: { contains: name, mode: 'insensitive' } }
-      };
-    }
-
-    const applications = await prisma.application.findMany({
-      where: filter,
-      include: {
-        job: { select: { title: true, id: true } },
-        student: {
-          include: {
-            user: { select: { email: true } }
-          }
-        }
-      },
-      orderBy: { appliedAt: 'desc' }
-    });
-
-    res.json({ success: true, applications });
-  } catch (error) {
-    console.error('Error fetching all applications:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-};
-
 // Get applicants for a job
 exports.getJobApplications = async (req, res) => {
   try {
@@ -387,22 +294,19 @@ exports.getJobApplications = async (req, res) => {
     const userId = req.user.id;
 
     const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
+      where: { userId },
+      include: { companies: true }
     });
 
-    if (!profile) {
+    if (!profile || profile.companies.length === 0) {
       return res.status(403).json({ success: false, message: 'Unauthorized access' });
     }
 
-    const job = await prisma.jobPosting.findFirst({
-      where: { 
-        id: jobId,
-        company: { recruiterId: profile.id }
-      },
-      include: { company: true }
-    });
+    const companyId = profile.companies[0].id;
 
-    if (!job) {
+    const job = await prisma.jobPosting.findUnique({ where: { id: jobId } });
+
+    if (!job || job.companyId !== companyId) {
       return res.status(404).json({ success: false, message: 'Job not found' });
     }
 
@@ -428,7 +332,7 @@ exports.getJobApplications = async (req, res) => {
       orderBy: { appliedAt: 'desc' }
     });
 
-    res.json({ success: true, applications, job });
+    res.json({ success: true, applications });
   } catch (error) {
     console.error('Error fetching applications:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
@@ -442,18 +346,18 @@ exports.getApplicationDetails = async (req, res) => {
     const userId = req.user.id;
 
     const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
+      where: { userId },
+      include: { companies: true }
     });
 
-    if (!profile) {
+    if (!profile || profile.companies.length === 0) {
       return res.status(403).json({ success: false, message: 'Unauthorized access' });
     }
 
-    const application = await prisma.application.findFirst({
-      where: { 
-        id,
-        job: { company: { recruiterId: profile.id } }
-      },
+    const companyId = profile.companies[0].id;
+
+    const application = await prisma.application.findUnique({
+      where: { id },
       include: {
         job: true,
         student: {
@@ -467,7 +371,7 @@ exports.getApplicationDetails = async (req, res) => {
       }
     });
 
-    if (!application) {
+    if (!application || application.job.companyId !== companyId) {
       return res.status(404).json({ success: false, message: 'Application not found' });
     }
 
@@ -486,22 +390,25 @@ exports.updateApplicationStatus = async (req, res) => {
     const userId = req.user.id;
 
     const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
+      where: { userId },
+      include: { companies: true }
     });
 
-    if (!profile) {
+    if (!profile || profile.companies.length === 0) {
       return res.status(403).json({ success: false, message: 'Unauthorized access' });
     }
 
-    const application = await prisma.application.findFirst({
-      where: { 
-        id,
-        job: { company: { recruiterId: profile.id } }
-      },
-      include: { job: { include: { company: true } }, student: true }
+    const companyId = profile.companies[0].id;
+
+    const application = await prisma.application.findUnique({
+      where: { id },
+      include: { 
+        job: true,
+        student: true
+      }
     });
 
-    if (!application) {
+    if (!application || application.job.companyId !== companyId) {
       return res.status(404).json({ success: false, message: 'Application not found' });
     }
 
@@ -511,36 +418,15 @@ exports.updateApplicationStatus = async (req, res) => {
         data: { status }
       });
 
-      if (application.status !== status) {
-        await tx.applicationStatusHistory.create({
-          data: {
-            applicationId: id,
-            oldStatus: application.status,
-            newStatus: status,
-            changedBy: userId,
-            note
-          }
-        });
-        
-        let message = `Your application for ${application.job.title} at ${application.job.company.name} `;
-        switch(status) {
-          case 'UNDER_REVIEW': message += 'is now under review.'; break;
-          case 'SHORTLISTED': message += 'has been shortlisted.'; break;
-          case 'INTERVIEW': message += 'has moved to the interview stage.'; break;
-          case 'SELECTED': message += 'has been selected.'; break;
-          case 'REJECTED': message += 'has been rejected.'; break;
-          default: message += `status changed to ${status}.`; break;
+      await tx.applicationStatusHistory.create({
+        data: {
+          applicationId: id,
+          oldStatus: application.status,
+          newStatus: status,
+          changedBy: userId,
+          note
         }
-
-        await tx.notification.create({
-          data: {
-            userId: application.student.userId,
-            type: 'APPLICATION_UPDATED',
-            title: 'Application Updated',
-            message
-          }
-        });
-      }
+      });
 
       return app;
     });
@@ -569,22 +455,22 @@ exports.updateApplicationNotes = async (req, res) => {
     const userId = req.user.id;
 
     const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
+      where: { userId },
+      include: { companies: true }
     });
 
-    if (!profile) {
+    if (!profile || profile.companies.length === 0) {
       return res.status(403).json({ success: false, message: 'Unauthorized access' });
     }
 
-    const application = await prisma.application.findFirst({
-      where: { 
-        id,
-        job: { company: { recruiterId: profile.id } }
-      },
+    const companyId = profile.companies[0].id;
+
+    const application = await prisma.application.findUnique({
+      where: { id },
       include: { job: true }
     });
 
-    if (!application) {
+    if (!application || application.job.companyId !== companyId) {
       return res.status(404).json({ success: false, message: 'Application not found' });
     }
 
@@ -605,72 +491,40 @@ exports.getDashboardStats = async (req, res) => {
   try {
     const userId = req.user.id;
     const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
+      where: { userId },
+      include: { companies: true }
     });
 
-    if (!profile) {
+    if (!profile || profile.companies.length === 0) {
       return res.status(403).json({ success: false, message: 'Unauthorized access' });
     }
 
-    const company = await prisma.company.findFirst({
-      where: { recruiterId: profile.id }
-    });
-
-    if (!company) {
-      return res.json({
-        success: true,
-        profile,
-        companyStatus: null,
-        companyRejectionReason: null,
-        recentJobs: [],
-        recentApplications: [],
-        stats: {
-          jobs: { total: 0, pending: 0, approved: 0, rejected: 0 },
-          applications: { total: 0, underReview: 0, shortlisted: 0, selected: 0 }
-        }
-      });
-    }
+    const companyId = profile.companies[0].id;
 
     // Get Jobs count
     const [pendingJobs, approvedJobs, rejectedJobs] = await Promise.all([
-      prisma.jobPosting.count({ where: { company: { recruiterId: profile.id }, status: 'PENDING', deletedAt: null } }),
-      prisma.jobPosting.count({ where: { company: { recruiterId: profile.id }, status: 'APPROVED', deletedAt: null } }),
-      prisma.jobPosting.count({ where: { company: { recruiterId: profile.id }, status: 'REJECTED', deletedAt: null } })
+      prisma.jobPosting.count({ where: { companyId, status: 'PENDING' } }),
+      prisma.jobPosting.count({ where: { companyId, status: 'APPROVED' } }),
+      prisma.jobPosting.count({ where: { companyId, status: 'REJECTED' } })
     ]);
+
+    // Get Applications count for jobs belonging to this company
+    const jobs = await prisma.jobPosting.findMany({
+      where: { companyId },
+      select: { id: true }
+    });
+    
+    const jobIds = jobs.map(j => j.id);
 
     const [totalApplicants, underReview, shortlisted, selected] = await Promise.all([
-      prisma.application.count({ where: { job: { company: { recruiterId: profile.id } } } }),
-      prisma.application.count({ where: { job: { company: { recruiterId: profile.id } }, status: 'UNDER_REVIEW' } }),
-      prisma.application.count({ where: { job: { company: { recruiterId: profile.id } }, status: 'SHORTLISTED' } }),
-      prisma.application.count({ where: { job: { company: { recruiterId: profile.id } }, status: 'SELECTED' } })
+      prisma.application.count({ where: { jobId: { in: jobIds } } }),
+      prisma.application.count({ where: { jobId: { in: jobIds }, status: 'UNDER_REVIEW' } }),
+      prisma.application.count({ where: { jobId: { in: jobIds }, status: 'SHORTLISTED' } }),
+      prisma.application.count({ where: { jobId: { in: jobIds }, status: 'SELECTED' } })
     ]);
-
-    // Get recent jobs
-    const recentJobs = await prisma.jobPosting.findMany({
-      where: { company: { recruiterId: profile.id }, deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      include: { company: { select: { name: true } } }
-    });
-
-    // Get recent applications
-    const recentApplications = await prisma.application.findMany({
-      where: { job: { company: { recruiterId: profile.id } } },
-      orderBy: { appliedAt: 'desc' },
-      take: 5,
-      include: {
-        job: { select: { title: true } },
-        student: { include: { user: { select: { email: true } } } }
-      }
-    });
 
     res.json({
       success: true,
-      profile,
-      companyStatus: company.status,
-      companyRejectionReason: company.rejectionReason,
-      recentJobs,
-      recentApplications,
       stats: {
         jobs: {
           total: pendingJobs + approvedJobs + rejectedJobs,
@@ -692,117 +546,7 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
-// Update recruiter profile
-exports.updateProfile = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { name, phone } = req.body;
-
-    const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
-    });
-
-    if (!profile) {
-      return res.status(404).json({ success: false, message: 'Recruiter profile not found' });
-    }
-
-    const updatedProfile = await prisma.recruiterProfile.update({
-      where: { userId },
-      data: { name, phone }
-    });
-
-    res.json({ success: true, profile: updatedProfile });
-  } catch (error) {
-    console.error('Error updating recruiter profile:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-};
-
-// Create recruiter company
-exports.createCompany = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { name, description, website, industry, location } = req.body;
-
-    const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId },
-      include: { companies: true }
-    });
-
-    if (!profile) {
-      return res.status(404).json({ success: false, message: 'Recruiter profile not found' });
-    }
-
-    if (profile.companies && profile.companies.length > 0) {
-      return res.status(409).json({ success: false, message: 'Company already exists for this recruiter' });
-    }
-
-    const company = await prisma.company.create({
-      data: {
-        name,
-        description,
-        website,
-        industry,
-        location,
-        status: 'PENDING',
-        recruiterId: profile.id
-      }
-    });
-
-    res.status(201).json({ success: true, company });
-  } catch (error) {
-    console.error('Error creating company:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-};
-
-// Update recruiter company
-exports.updateCompany = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { name, description, website, industry, location } = req.body;
-
-    const profile = await prisma.recruiterProfile.findUnique({
-      where: { userId }
-    });
-
-    if (!profile) {
-      return res.status(404).json({ success: false, message: 'Recruiter profile not found' });
-    }
-
-    const company = await prisma.company.findFirst({
-      where: { recruiterId: profile.id }
-    });
-
-    if (!company) {
-      return res.status(404).json({ success: false, message: 'Company not found' });
-    }
-
-    // Reset status to PENDING if it was REJECTED, otherwise keep existing status (or PENDING)
-    const currentStatus = company.status;
-    const newStatus = (currentStatus === 'REJECTED') ? 'PENDING' : currentStatus;
-
-    const updatedCompany = await prisma.company.update({
-      where: { id: company.id },
-      data: {
-        name,
-        description,
-        website,
-        industry,
-        location,
-        status: newStatus,
-        rejectionReason: newStatus === 'PENDING' ? null : company.rejectionReason
-      }
-    });
-
-    res.json({ success: true, company: updatedCompany });
-  } catch (error) {
-    console.error('Error updating company:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-};
-
-// Get recruiter notifications
+// Get notifications
 exports.getNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -817,12 +561,12 @@ exports.getNotifications = async (req, res) => {
   }
 };
 
-// Mark notification as read
+// Mark notification read
 exports.markNotificationRead = async (req, res) => {
   try {
-    const userId = req.user.id;
     const { id } = req.params;
-
+    const userId = req.user.id;
+    
     const notification = await prisma.notification.findUnique({
       where: { id }
     });
@@ -831,31 +575,14 @@ exports.markNotificationRead = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Notification not found' });
     }
 
-    const updatedNotification = await prisma.notification.update({
+    const updated = await prisma.notification.update({
       where: { id },
       data: { readAt: new Date() }
     });
 
-    res.json({ success: true, notification: updatedNotification });
+    res.json({ success: true, notification: updated });
   } catch (error) {
-    console.error('Error marking notification read:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-};
-
-// Mark all notifications as read
-exports.markAllNotificationsRead = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    await prisma.notification.updateMany({
-      where: { userId, readAt: null },
-      data: { readAt: new Date() }
-    });
-
-    res.json({ success: true, message: 'All notifications marked as read' });
-  } catch (error) {
-    console.error('Error marking all notifications read:', error);
+    console.error('Error updating notification:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };

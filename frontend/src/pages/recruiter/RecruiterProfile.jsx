@@ -1,122 +1,142 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import RecruiterLayout from '../../components/RecruiterLayout';
 import { api } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { LoadingState } from '../../components/ui/States';
-import { CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Building2, User, Mail, Phone, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 
-export default function RecruiterProfile() {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState({
-    name: '',
-    phone: ''
-  });
-
+const RecruiterProfile = () => {
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await api('/recruiter/profile');
+        setProfile(data.profile);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchProfile();
   }, []);
 
-  const fetchProfile = async () => {
-    try {
-      const response = await api.get('/recruiter/profile');
-      if (response.data.profile) {
-        setProfile({
-          name: response.data.profile.name || '',
-          phone: response.data.profile.phone || ''
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) {
+    return (
+      <RecruiterLayout title="My Company">
+        <div className="text-gray-500">Loading profile...</div>
+      </RecruiterLayout>
+    );
+  }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setMessage(null);
+  if (!profile) {
+    return (
+      <RecruiterLayout title="My Company">
+        <div className="text-red-500">Failed to load profile.</div>
+      </RecruiterLayout>
+    );
+  }
 
-    try {
-      const response = await api.patch('/recruiter/profile', profile);
-      setProfile({
-        name: response.data.profile.name || '',
-        phone: response.data.profile.phone || ''
-      });
-      setMessage({ type: 'success', text: 'Profile updated successfully.' });
-      setTimeout(() => setMessage(null), 3000);
-    } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to update profile.' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) return <LoadingState message="Loading profile..." />;
+  const company = profile.companies[0];
 
   return (
-    <div className="space-y-8 max-w-2xl animate-fade-in">
-      <div className="pb-6 border-b border-border-light">
-        <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary mb-2">MY PROFILE</div>
-        <h1 className="text-3xl font-serif font-bold text-navy mb-2">Profile</h1>
-        <p className="text-sm font-medium text-content-muted">Manage your account information.</p>
+    <RecruiterLayout title="My Company">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Recruiter Details */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+            <User className="w-5 h-5 mr-2 text-primary-600" />
+            Recruiter Details
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-500">Name</label>
+              <div className="mt-1 text-gray-900 font-medium">{profile.name}</div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500 flex items-center">
+                <Mail className="w-4 h-4 mr-1" /> Email
+              </label>
+              <div className="mt-1 text-gray-900 font-medium">{profile.user?.email}</div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500 flex items-center">
+                <Phone className="w-4 h-4 mr-1" /> Phone
+              </label>
+              <div className="mt-1 text-gray-900 font-medium">{profile.phone || '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Company Details */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center justify-between">
+            <div className="flex items-center">
+              <Building2 className="w-5 h-5 mr-2 text-primary-600" />
+              Company Details
+            </div>
+            {company && (
+              <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                company.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                company.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                'bg-yellow-100 text-yellow-800'
+              }`}>
+                {company.status}
+              </span>
+            )}
+          </h2>
+          
+          {company ? (
+            <div className="space-y-4">
+              {company.status === 'REJECTED' && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md flex items-start">
+                  <XCircle className="w-5 h-5 text-red-500 mr-2 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium text-red-800">Company Rejected</h4>
+                    <p className="text-sm text-red-700 mt-1">{company.rejectionReason}</p>
+                  </div>
+                </div>
+              )}
+              {company.status === 'PENDING' && (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
+                  <AlertCircle className="w-5 h-5 text-yellow-500 mr-2 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium text-yellow-800">Pending Approval</h4>
+                    <p className="text-sm text-yellow-700 mt-1">Your company is waiting for admin approval. You can create jobs, but they will not be visible to students until the company is approved.</p>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-medium text-gray-500">Company Name</label>
+                <div className="mt-1 text-gray-900 font-medium">{company.name}</div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Industry</label>
+                <div className="mt-1 text-gray-900">{company.industry || '-'}</div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Location</label>
+                <div className="mt-1 text-gray-900">{company.location || '-'}</div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Website</label>
+                <div className="mt-1 text-blue-600 hover:underline">
+                  <a href={company.website} target="_blank" rel="noopener noreferrer">{company.website || '-'}</a>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Description</label>
+                <div className="mt-1 text-gray-900 text-sm whitespace-pre-wrap">{company.description || '-'}</div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-gray-500">No company registered yet.</div>
+          )}
+        </div>
       </div>
-
-      {message && (
-        <div className={`p-4 rounded-xl border text-sm font-medium flex items-center gap-3 ${
-          message.type === 'success' ? 'bg-status-success/10 border-status-success/20 text-status-success' : 'bg-status-danger/10 border-status-danger/20 text-status-danger'
-        }`}>
-          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertTriangle className="w-5 h-5 shrink-0" />}
-          {message.text}
-        </div>
-      )}
-
-      <Card className="p-8">
-        <div className="flex items-center gap-6 mb-10">
-          <div className="w-16 h-16 bg-navy text-white rounded-full flex items-center justify-center text-2xl font-bold shadow-sm">
-            {profile.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'R'}
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-navy mb-1">{profile.name || 'Recruiter'}</h2>
-            <p className="text-sm text-content-muted mb-2">{user?.email}</p>
-            <p className="text-xs font-semibold text-content-muted">Role<br/><span className="font-normal capitalize">{user?.role?.toLowerCase()}</span></p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
-            label="Full Name"
-            value={profile.name}
-            onChange={(e) => setProfile({...profile, name: e.target.value})}
-            required
-            placeholder="e.g. John Doe"
-          />
-          <Input
-            label="Email Address"
-            value={user?.email || ''}
-            disabled
-            className="bg-base text-content-muted"
-          />
-          <Input
-            label="Phone Number"
-            value={profile.phone}
-            onChange={(e) => setProfile({...profile, phone: e.target.value})}
-            placeholder="e.g. +91 98765 43210"
-          />
-
-          <div className="flex justify-end pt-4">
-            <Button type="submit" variant="primary" size="lg" loading={saving} className="px-8 shadow-sm">
-              Save Changes
-            </Button>
-          </div>
-        </form>
-      </Card>
-    </div>
+    </RecruiterLayout>
   );
-}
+};
+
+export default RecruiterProfile;

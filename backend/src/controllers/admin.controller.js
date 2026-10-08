@@ -28,33 +28,6 @@ exports.getCompanies = async (req, res) => {
   }
 };
 
-exports.getCompanyById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const company = await prisma.company.findUnique({
-      where: { id },
-      include: {
-        recruiter: {
-          select: {
-            name: true,
-            phone: true,
-            user: { select: { email: true } }
-          }
-        }
-      }
-    });
-
-    if (!company) {
-      return res.status(404).json({ success: false, message: 'Company not found' });
-    }
-
-    res.json({ success: true, company });
-  } catch (error) {
-    console.error('Error fetching company by id:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-};
-
 exports.approveCompany = async (req, res) => {
   try {
     const { id } = req.params;
@@ -86,15 +59,6 @@ exports.approveCompany = async (req, res) => {
           targetId: comp.id
         }
       });
-
-      await tx.notification.create({
-        data: {
-          userId: company.recruiter.userId,
-          type: 'COMPANY_APPROVED',
-          title: 'Company Approved',
-          message: `Your company ${comp.name} has been approved. You can now post jobs.`
-        }
-      });
       
       return comp;
     });
@@ -121,7 +85,7 @@ exports.rejectCompany = async (req, res) => {
 
     const company = await prisma.company.findUnique({ 
       where: { id },
-      include: { recruiter: true }
+      include: { recruiter: true } 
     });
     if (!company) {
       return res.status(404).json({ success: false, message: 'Company not found' });
@@ -137,25 +101,13 @@ exports.rejectCompany = async (req, res) => {
         data: { status: 'REJECTED', rejectionReason: reason }
       });
       
-      const actionStr = company.status === 'APPROVED' ? 'REVOKED' : 'REJECTED';
-      const pastTense = company.status === 'APPROVED' ? 'revoked' : 'rejected';
-      
       await tx.adminActionLog.create({
         data: {
           adminId,
-          action: `COMPANY_${actionStr}`,
+          action: 'COMPANY_REJECTED',
           targetType: 'COMPANY',
           targetId: comp.id,
           reason
-        }
-      });
-
-      await tx.notification.create({
-        data: {
-          userId: company.recruiter.userId,
-          type: `COMPANY_${actionStr}`,
-          title: `Company ${actionStr === 'REVOKED' ? 'Revoked' : 'Rejected'}`,
-          message: `Your company ${comp.name} was ${pastTense}. Reason: ${reason}`
         }
       });
       
@@ -198,37 +150,6 @@ exports.getJobs = async (req, res) => {
   }
 };
 
-exports.getJobById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const job = await prisma.jobPosting.findUnique({
-      where: { id },
-      include: {
-        company: {
-          select: { name: true, status: true, recruiter: true }
-        },
-        applications: {
-          include: {
-            student: {
-              include: { user: { select: { email: true } } }
-            }
-          },
-          orderBy: { appliedAt: 'desc' }
-        }
-      }
-    });
-
-    if (!job) {
-      return res.status(404).json({ success: false, message: 'Job not found' });
-    }
-
-    res.json({ success: true, job });
-  } catch (error) {
-    console.error('Error fetching job by id:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-};
-
 exports.approveJob = async (req, res) => {
   try {
     const { id } = req.params;
@@ -236,7 +157,11 @@ exports.approveJob = async (req, res) => {
 
     const job = await prisma.jobPosting.findUnique({ 
       where: { id },
-      include: { company: { include: { recruiter: true } } }
+      include: { 
+        company: {
+          include: { recruiter: true }
+        }
+      }
     });
     
     if (!job) {
@@ -265,15 +190,6 @@ exports.approveJob = async (req, res) => {
           targetId: updated.id
         }
       });
-
-      await tx.notification.create({
-        data: {
-          userId: job.company.recruiter.userId,
-          type: 'JOB_APPROVED',
-          title: 'Job Approved',
-          message: `Your job posting "${updated.title}" has been approved and is now live.`
-        }
-      });
       
       return updated;
     });
@@ -300,7 +216,9 @@ exports.rejectJob = async (req, res) => {
 
     const job = await prisma.jobPosting.findUnique({ 
       where: { id },
-      include: { company: { include: { recruiter: true } } }
+      include: {
+        company: { include: { recruiter: true } }
+      }
     });
     if (!job) {
       return res.status(404).json({ success: false, message: 'Job not found' });
@@ -316,25 +234,13 @@ exports.rejectJob = async (req, res) => {
         data: { status: 'REJECTED', rejectionReason: reason }
       });
       
-      const actionStr = job.status === 'APPROVED' ? 'REVOKED' : 'REJECTED';
-      const pastTense = job.status === 'APPROVED' ? 'revoked' : 'rejected';
-      
       await tx.adminActionLog.create({
         data: {
           adminId,
-          action: `JOB_${actionStr}`,
+          action: 'JOB_REJECTED',
           targetType: 'JOB',
           targetId: updated.id,
           reason
-        }
-      });
-
-      await tx.notification.create({
-        data: {
-          userId: job.company.recruiter.userId,
-          type: `JOB_${actionStr}`,
-          title: `Job ${actionStr === 'REVOKED' ? 'Revoked' : 'Rejected'}`,
-          message: `Your job posting "${updated.title}" was ${pastTense}. Reason: ${reason}`
         }
       });
       
@@ -357,13 +263,7 @@ exports.rejectJob = async (req, res) => {
 
 exports.getAuditLogs = async (req, res) => {
   try {
-    const { targetId, targetType } = req.query;
-    const filter = {};
-    if (targetId) filter.targetId = targetId;
-    if (targetType) filter.targetType = targetType;
-
     const logs = await prisma.adminActionLog.findMany({
-      where: filter,
       include: {
         admin: {
           select: { email: true }

@@ -25,8 +25,14 @@ describe('Admin Governance API', () => {
     const recruiterUser = await prisma.user.findUnique({ where: { email: 'recruiter@example.com' }, include: { recruiterProfile: true }});
     recruiterId = recruiterUser.recruiterProfile.id;
 
-    // Removed global deleteMany to avoid interfering with parallel tests.
-    // Each test suite should just use its own isolated test data.
+    // Reset database state for tests
+    await prisma.adminActionLog.deleteMany({});
+    await prisma.notification.deleteMany({});
+    await prisma.savedJob.deleteMany({});
+    await prisma.applicationStatusHistory.deleteMany({});
+    await prisma.application.deleteMany({});
+    await prisma.jobPosting.deleteMany({});
+    await prisma.company.deleteMany({});
 
     testCompany = await prisma.company.create({
       data: {
@@ -110,7 +116,7 @@ describe('Admin Governance API', () => {
 
     it('audit log created for company rejection', async () => {
       const logs = await prisma.adminActionLog.findMany({ where: { action: 'COMPANY_REJECTED' } });
-      expect(logs.length).toBeGreaterThanOrEqual(1);
+      expect(logs.length).toBe(1);
       expect(logs[0].reason).toBe('Incomplete profile');
     });
 
@@ -126,7 +132,7 @@ describe('Admin Governance API', () => {
 
     it('audit log created for company approval', async () => {
       const logs = await prisma.adminActionLog.findMany({ where: { action: 'COMPANY_APPROVED' } });
-      expect(logs.length).toBeGreaterThanOrEqual(1);
+      expect(logs.length).toBe(1);
     });
 
     it('repeated invalid state transition handled', async () => {
@@ -168,7 +174,7 @@ describe('Admin Governance API', () => {
 
     it('audit log created for job action', async () => {
       const logs = await prisma.adminActionLog.findMany({ where: { action: 'JOB_REJECTED' } });
-      expect(logs.length).toBeGreaterThanOrEqual(1);
+      expect(logs.length).toBe(1);
       expect(logs[0].reason).toBe('Invalid requirements');
     });
 
