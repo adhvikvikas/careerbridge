@@ -59,7 +59,7 @@ export default function StudentProfile() {
         backlogs: profile.backlogs !== '' ? parseInt(profile.backlogs) : 0
       };
 
-      await api('/student/profile', { method: 'PATCH', body: payload });
+      await api('/student/profile', { method: 'PATCH', body: JSON.stringify(payload) });
       setMessage({ type: 'success', text: 'Profile updated successfully.' });
     } catch (err) {
       setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });

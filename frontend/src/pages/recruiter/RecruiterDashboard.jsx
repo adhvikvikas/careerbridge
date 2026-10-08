@@ -222,10 +222,10 @@ export default function RecruiterDashboard() {
                 <Link to={`/recruiter/applications/${app.id}`} key={app.id} className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-base/50 transition-colors block">
                   <div className="flex items-center gap-4 min-w-0">
                     <div className="w-10 h-10 bg-base rounded-full border border-border-light flex items-center justify-center shrink-0 text-navy font-bold text-sm">
-                      {app.student?.user?.email?.[0]?.toUpperCase() || 'S'}
+                      {(app.student?.name || app.student?.user?.name || app.student?.user?.email || 'S')[0].toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-sm font-bold text-navy truncate">{app.student?.user?.email?.split('@')[0] || 'Applicant'}</h4>
+                      <h4 className="text-sm font-bold text-navy truncate">{app.student?.name || app.student?.user?.name || app.student?.user?.email?.split('@')[0] || 'Unknown Candidate'}</h4>
                       <p className="text-xs text-content-muted mt-0.5 truncate">{app.job?.title}</p>
                       <p className="text-[11px] text-content-muted mt-1">
                         {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date unavailable'}

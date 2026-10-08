@@ -220,7 +220,7 @@ export default function AdminJobDetails() {
                   {job.applications.map(app => (
                     <tr key={app.id} className="hover:bg-base/50 transition-colors">
                       <td className="px-4 py-3">
-                        <div className="font-bold text-navy">{app.student?.user?.email?.split('@')[0] || 'Unknown'}</div>
+                        <div className="font-bold text-navy">{app.student?.name || app.student?.user?.name || app.student?.user?.email?.split('@')[0] || 'Unknown Candidate'}</div>
                         <div className="text-xs text-content-muted mt-0.5">{app.student?.user?.email}</div>
                       </td>
                       <td className="px-4 py-3 text-navy">{app.student?.branch || '—'}</td>

@@ -31,13 +31,6 @@ enum ApplicationStatus {
   REJECTED
 }
 
-enum EmploymentType {
-  FULL_TIME
-  INTERNSHIP
-  PART_TIME
-  CONTRACT
-}
-
 // -----------------------------------------
 // Models
 // -----------------------------------------
@@ -107,7 +100,6 @@ model JobPosting {
   graduationYears Int[]
   deadline        DateTime
   openings        Int?
-  employmentType  EmploymentType @default(FULL_TIME)
   status          ApprovalStatus @default(PENDING)
   rejectionReason String?
   createdAt       DateTime       @default(now())

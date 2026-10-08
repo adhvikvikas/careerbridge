@@ -113,10 +113,10 @@ export default function RecruiterApplications() {
                   <TableCell className="py-4">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-base border border-border-light rounded-full flex items-center justify-center shadow-sm font-bold text-navy">
-                        {app.student.user.email[0].toUpperCase()}
+                        {(app.student?.name || app.student?.user?.name || app.student?.user?.email || 'U')[0].toUpperCase()}
                       </div>
                       <div>
-                        <div className="font-bold text-navy">{app.student.user.email.split('@')[0]}</div>
+                        <div className="font-bold text-navy">{app.student?.name || app.student?.user?.name || app.student?.user?.email?.split('@')[0] || 'Unknown Candidate'}</div>
                         <div className="text-xs font-medium text-content-muted mt-0.5 flex items-center gap-2">
                           <span>{app.student.branch || 'Unknown Branch'}</span>
                           <span className="w-1 h-1 rounded-full bg-border-light"></span>

@@ -79,7 +79,7 @@ export default function RecruiterApplicationDetails() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2">
         <div>
           <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary mb-2">APPLICATION PROFILE</div>
-          <h1 className="text-3xl font-serif font-bold text-navy mb-2">{student.user?.email?.split('@')[0]}</h1>
+          <h1 className="text-3xl font-serif font-bold text-navy mb-2">{student?.name || student?.user?.name || student?.user?.email?.split('@')[0] || 'Unknown Candidate'}</h1>
           <p className="text-sm font-medium text-content-muted">
             Reviewing application for <strong>{job.title}</strong> at <strong>{job.company?.name || 'Company'}</strong>
           </p>

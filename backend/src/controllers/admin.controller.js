@@ -185,7 +185,16 @@ exports.getJobs = async (req, res) => {
       where: filter,
       include: {
         company: {
-          select: { name: true, status: true }
+          select: { 
+            name: true, 
+            status: true,
+            recruiter: {
+              select: {
+                name: true,
+                user: { select: { email: true } }
+              }
+            }
+          }
         }
       },
       orderBy: { createdAt: 'desc' }

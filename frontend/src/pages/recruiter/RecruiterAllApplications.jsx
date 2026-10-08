@@ -111,10 +111,10 @@ export default function RecruiterAllApplications() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-                          {app.student.user.email[0].toUpperCase()}
+                          {(app.student?.name || app.student?.user?.name || app.student?.user?.email || 'U')[0].toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-semibold text-navy">{app.student.user.email.split('@')[0]}</p>
+                          <p className="font-semibold text-navy">{app.student?.name || app.student?.user?.name || app.student?.user?.email?.split('@')[0] || 'Unknown Candidate'}</p>
                           <p className="text-xs text-content-muted flex items-center gap-1 mt-0.5">
                             <Mail className="w-3 h-3" /> {app.student.user.email}
                           </p>

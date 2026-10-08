@@ -1,3 +1,19 @@
+const DEPARTMENT_MAPPING = {
+  'COMPUTER SCIENCE': 'CSE',
+  'COMPUTER SCIENCE AND ENGINEERING': 'CSE',
+  'INFORMATION TECHNOLOGY': 'IT',
+  'ELECTRONICS AND COMMUNICATION': 'ECE',
+  'MECHANICAL': 'MECH',
+  'CIVIL': 'CIVIL',
+  'ELECTRICAL AND ELECTRONICS': 'EEE'
+};
+
+const normalizeDepartment = (dept) => {
+  if (!dept) return '';
+  const normalized = dept.toUpperCase().trim();
+  return DEPARTMENT_MAPPING[normalized] || normalized;
+};
+
 exports.checkEligibility = (job, studentProfile) => {
   const reasons = [];
   
@@ -14,7 +30,9 @@ exports.checkEligibility = (job, studentProfile) => {
   }
 
   if (job.departments && job.departments.length > 0) {
-    if (!studentProfile.branch || !job.departments.includes(studentProfile.branch)) {
+    const jobDepts = job.departments.map(normalizeDepartment);
+    const studentDept = normalizeDepartment(studentProfile.branch);
+    if (!studentDept || !jobDepts.includes(studentDept)) {
       reasons.push(`Open only to departments: ${job.departments.join(', ')}`);
     }
   }

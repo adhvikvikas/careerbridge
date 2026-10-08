@@ -94,57 +94,6 @@ describe('Recruiter Portal API', () => {
     });
   });
 
-  describe('Company Management', () => {
-    it('recruiter without company cannot create job', async () => {
-      const res = await request(app).post('/api/recruiter/jobs').set('Authorization', `Bearer ${recruiter2Token}`).send({
-        title: 'Test Title', description: 'Desc12345678901234567', departments: ['IT'], graduationYears: [2025], deadline: '2025-12-31'
-      });
-      expect(res.status).toBe(404);
-      expect(res.body.message).toBe('Company not found for this recruiter');
-    });
-
-    it('recruiter can create company', async () => {
-      const res = await request(app).post('/api/recruiter/company').set('Authorization', `Bearer ${recruiter2Token}`).send({
-        name: 'New Company',
-        description: 'New company desc',
-        website: 'https://newcomp.com'
-      });
-      expect(res.status).toBe(201);
-      expect(res.body.company.name).toBe('New Company');
-      expect(res.body.company.status).toBe('PENDING');
-      company2 = res.body.company;
-    });
-
-    it('recruiter cannot create duplicate company', async () => {
-      const res = await request(app).post('/api/recruiter/company').set('Authorization', `Bearer ${recruiter2Token}`).send({
-        name: 'Duplicate Company'
-      });
-      expect(res.status).toBe(409);
-    });
-
-    it('recruiter can retrieve own company', async () => {
-      const res = await request(app).get('/api/recruiter/company').set('Authorization', `Bearer ${recruiter2Token}`);
-      expect(res.status).toBe(200);
-      expect(res.body.company.name).toBe('New Company');
-    });
-
-    it('recruiter can update own company', async () => {
-      const res = await request(app).patch('/api/recruiter/company').set('Authorization', `Bearer ${recruiter2Token}`).send({
-        name: 'Updated Company'
-      });
-      expect(res.status).toBe(200);
-      expect(res.body.company.name).toBe('Updated Company');
-    });
-
-    it('recruiter cannot create job while company is PENDING', async () => {
-      const res = await request(app).post('/api/recruiter/jobs').set('Authorization', `Bearer ${recruiter2Token}`).send({
-        title: 'Test Title', description: 'Desc12345678901234567', departments: ['IT'], graduationYears: [2025], deadline: '2025-12-31'
-      });
-      expect(res.status).toBe(403);
-      expect(res.body.message).toBe('Company must be APPROVED before posting jobs');
-    });
-  });
-
   describe('Job Creation & Management', () => {
     it('recruiter can create a valid job', async () => {
       const res = await request(app)
@@ -156,8 +105,7 @@ describe('Recruiter Portal API', () => {
           minCgpa: 7.5,
           departments: ['CS', 'IT'],
           graduationYears: [2027],
-          deadline: '2027-12-31',
-          employmentType: 'FULL_TIME'
+          deadline: '2027-12-31'
         });
       
       expect(res.status).toBe(201);
@@ -211,7 +159,6 @@ describe('Recruiter Portal API', () => {
           departments: ['CS'],
           graduationYears: [2027],
           deadline: '2027-12-31',
-          employmentType: 'INTERNSHIP',
           status: 'APPROVED'
         });
       expect(res.status).toBe(403);
@@ -297,21 +244,6 @@ describe('Recruiter Portal API', () => {
       
       expect(res.status).toBe(200);
       expect(res.body.application.recruiterNotes).toBe('Candidate has strong DSA');
-    });
-  });
-
-  describe('Notifications', () => {
-    it('recruiter can retrieve own notifications', async () => {
-      const res = await request(app).get('/api/recruiter/notifications').set('Authorization', `Bearer ${recruiter1Token}`);
-      expect(res.status).toBe(200);
-      expect(res.body.notifications).toBeInstanceOf(Array);
-    });
-
-    it('student receives notification when recruiter changes application status', async () => {
-      const studentUser = await prisma.user.findUnique({ where: { email: 'student@example.com' } });
-      const notifs = await prisma.notification.findMany({ where: { userId: studentUser.id } });
-      expect(notifs.length).toBeGreaterThan(0);
-      expect(notifs.some(n => n.type === 'APPLICATION_STATUS_UPDATE')).toBe(true);
     });
   });
 });

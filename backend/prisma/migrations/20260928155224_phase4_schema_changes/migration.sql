@@ -7,3 +7,13 @@
 */
 -- AlterTable
 ALTER TABLE "Application" ADD COLUMN     "recruiterNotes" TEXT;
+
+-- AlterTable
+ALTER TABLE "Company" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "rejectionReason" TEXT,
+ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL;
+
+-- AlterTable
+ALTER TABLE "JobPosting" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "rejectionReason" TEXT,
+ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL;
