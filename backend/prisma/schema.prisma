@@ -45,7 +45,6 @@ model User {
   id           String   @id @default(uuid())
   email        String   @unique
   passwordHash String
-  googleId     String?  @unique
   role         Role
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -60,7 +59,6 @@ model StudentProfile {
   id             String  @id @default(uuid())
   userId         String  @unique
   user           User    @relation(fields: [userId], references: [id])
-  name           String?
   branch         String?
   cgpa           Float?
   graduationYear Int?
@@ -112,7 +110,6 @@ model JobPosting {
   rejectionReason String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
-  deletedAt       DateTime?
 
   companyId String
   company   Company @relation(fields: [companyId], references: [id])

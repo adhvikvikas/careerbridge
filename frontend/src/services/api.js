@@ -1,17 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-class ApiError extends Error {
-  constructor(message, status, data) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.response = {
-      status,
-      data
-    };
-  }
-}
-
 export const api = async (endpoint, options = {}) => {
   const token = localStorage.getItem('careerbridge_token');
   const headers = {
@@ -29,27 +17,10 @@ export const api = async (endpoint, options = {}) => {
   
   // Cleanly handle unauthorized responses by throwing or returning a consistent format
   if (!response.ok) {
-    throw new ApiError(data.message || data.error || 'API Request Failed', response.status, data);
+    throw new Error(data.message || 'API Request Failed');
   }
 
   return data;
-};
-
-api.get = async (url) => {
-  const data = await api(url);
-  return { data };
-};
-api.post = async (url, body) => {
-  const data = await api(url, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
-  return { data };
-};
-api.patch = async (url, body) => {
-  const data = await api(url, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined });
-  return { data };
-};
-api.delete = async (url) => {
-  const data = await api(url, { method: 'DELETE' });
-  return { data };
 };
 
 export const login = (email, password) => {
@@ -59,20 +30,25 @@ export const login = (email, password) => {
   });
 };
 
-export const googleLogin = (credential) => {
-  return api('/auth/google', {
-    method: 'POST',
-    body: JSON.stringify({ credential }),
-  });
-};
-
 export const getMe = () => {
   return api('/auth/me');
 };
 
 export default {
-  get: api.get,
-  post: api.post,
-  patch: api.patch,
-  delete: api.delete
+  get: async (url) => {
+    const data = await api(url);
+    return { data };
+  },
+  post: async (url, body) => {
+    const data = await api(url, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
+    return { data };
+  },
+  patch: async (url, body) => {
+    const data = await api(url, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined });
+    return { data };
+  },
+  delete: async (url) => {
+    const data = await api(url, { method: 'DELETE' });
+    return { data };
+  }
 };

@@ -1,10 +1,10 @@
 # CareerBridge
 
-CareerBridge is a professional three-role campus recruitment platform connecting Student Applicants, Company Recruiters, and Placement Cell Administrators. It centralizes and digitizes the institutional placement workflow, replacing fragmented notices and manual approvals with a controlled, audit-friendly digital environment.
+Institutional Recruitment & Placement Management Platform
 
 ## Overview
 
-The platform ensures a fair, transparent, and efficient recruitment process through verified opportunities, strict eligibility constraints (CGPA, Branch, Year), and an auditable approval history.
+CareerBridge is a professional three-role campus recruitment platform connecting Student Applicants, Company Recruiters, and Placement Cell Administrators. It centralizes and digitizes the institutional placement workflow, replacing fragmented notices and manual approvals with a controlled, audit-friendly digital environment.
 
 ## Core Roles
 
@@ -94,7 +94,7 @@ Login → Dashboard → Approve Companies → Approve Jobs → Audit Actions
 
 ### Prerequisites
 - Node.js (v18+ recommended)
-- PostgreSQL (running locally or managed)
+- PostgreSQL (running locally)
 - Git
 
 ### 1. Clone the repository

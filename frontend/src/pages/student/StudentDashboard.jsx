@@ -1,363 +1,132 @@
 import React, { useEffect, useState } from 'react';
-import { useOutletContext, Link } from 'react-router-dom';
-import { api } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { StatusBadge } from '../../components/ui/Badge';
-import { LoadingState, ErrorState } from '../../components/ui/States';
-import { 
-  FileText, 
-  Users, 
-  User,
-  Trophy, 
-  Bookmark, 
-  ArrowRight, 
-  MapPin, 
-  Calendar, 
-  CheckCircle2, 
-  Clock, 
-  Bell, 
-  Briefcase 
-} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import StudentLayout from '../../components/StudentLayout';
+import { Briefcase, FileText, CheckCircle, XCircle, Clock, Bookmark, Bell } from 'lucide-react';
+import api from '../../services/api';
 
-export default function StudentDashboard() {
-  const { user } = useAuth();
-  const { profile } = useOutletContext() || {};
-  
+const StudentDashboard = () => {
   const [stats, setStats] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-  const [recommendedJobs, setRecommendedJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchStats = async () => {
       try {
-        const [statsRes, jobsRes] = await Promise.all([
-          api('/student/dashboard-stats'),
-          api('/student/jobs')
-        ]);
-        
-        setStats(statsRes.stats);
-        setNotifications(statsRes.recentNotifications || []);
-        
-        // Take top 3 jobs as "Recommended"
-        if (jobsRes.success && jobsRes.jobs) {
-          setRecommendedJobs(jobsRes.jobs.slice(0, 3));
-        }
+        const response = await api.get('/student/dashboard-stats');
+        setStats(response.data);
       } catch (err) {
-        setError('Failed to load dashboard statistics.');
+        setError('Failed to load dashboard statistics');
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchDashboardData();
+    fetchStats();
   }, []);
 
-  const handleSaveJob = async (jobId, isCurrentlySaved) => {
-    try {
-      if (isCurrentlySaved) {
-        await api(`/student/jobs/${jobId}/save`, { method: 'DELETE' });
-      } else {
-        await api(`/student/jobs/${jobId}/save`, { method: 'POST' });
-      }
-      // Optimistically update the UI
-      setRecommendedJobs(jobs => jobs.map(j => 
-        j.id === jobId ? { ...j, isSaved: !isCurrentlySaved } : j
-      ));
-    } catch (err) {
-      console.error('Failed to toggle save state', err);
-    }
-  };
-
-  if (loading) return <LoadingState message="Loading dashboard..." />;
-  if (error) return <ErrorState message={error} />;
-
-  const { applications } = stats;
-  const appliedCount = Math.max(0, applications.total - (applications.underReview + applications.shortlisted + applications.selected + applications.rejected));
-
-  // Profile readiness calculation
-  const profileFields = [
-    { key: 'name', label: 'Basic Information' },
-    { key: 'branch', label: 'Branch / Department' },
-    { key: 'cgpa', label: 'CGPA' },
-    { key: 'graduationYear', label: 'Graduation Year' },
-    { key: 'backlogs', label: 'Backlogs Status' },
-    { key: 'resumeUrl', label: 'Resume Uploaded' },
-  ];
-  const completedFields = profileFields.filter(f => profile && profile[f.key] !== null && profile[f.key] !== undefined && profile[f.key] !== '');
-  const missingFields = profileFields.filter(f => !profile || profile[f.key] === null || profile[f.key] === undefined || profile[f.key] === '');
-  const profileProgress = Math.round((completedFields.length / profileFields.length) * 100) || 0;
+  if (loading) return <StudentLayout title="Dashboard"><div className="flex justify-center p-8"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div></StudentLayout>;
+  if (error) return <StudentLayout title="Dashboard"><div className="bg-red-50 text-red-600 p-4 rounded-md">{error}</div></StudentLayout>;
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-        <div>
-          <div className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Student Dashboard</div>
-          <h1 className="text-3xl md:text-4xl font-serif font-bold tracking-tight text-navy mb-2">
-            Good morning, {profile?.name || user?.email?.split('@')[0] || 'Student'}
-          </h1>
-          <p className="text-content-muted">Here's what's happening with your placement journey.</p>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-[#B76E4C]/10 text-primary flex items-center justify-center shrink-0">
-            <FileText className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-sm font-medium text-content-muted mb-1">Total Applications</div>
-            <div className="text-2xl font-bold text-navy">{applications.total}</div>
-          </div>
-        </Card>
-        <Card className="p-5 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <Users className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-sm font-medium text-content-muted mb-1">Shortlisted</div>
-            <div className="text-2xl font-bold text-navy">{applications.shortlisted}</div>
-          </div>
-        </Card>
-        <Card className="p-5 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center shrink-0">
-            <Trophy className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-sm font-medium text-content-muted mb-1">Selected</div>
-            <div className="text-2xl font-bold text-navy">{applications.selected}</div>
-          </div>
-        </Card>
-        <Card className="p-5 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
-            <Bookmark className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-sm font-medium text-content-muted mb-1">Saved Jobs</div>
-            <div className="text-2xl font-bold text-navy">{stats.savedJobsCount}</div>
-          </div>
-        </Card>
+    <StudentLayout title="Student Dashboard">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard title="Available Jobs" value={stats.stats.approvedJobsCount} icon={Briefcase} color="bg-blue-100 text-blue-600" />
+        <StatCard title="Total Applications" value={stats.stats.applications.total} icon={FileText} color="bg-primary-100 text-primary-600" />
+        <StatCard title="Shortlisted" value={stats.stats.applications.shortlisted} icon={Clock} color="bg-yellow-100 text-yellow-600" />
+        <StatCard title="Selected" value={stats.stats.applications.selected} icon={CheckCircle} color="bg-green-100 text-green-600" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Recommended Jobs */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-bold text-navy flex items-center gap-2">
-                  <span className="text-primary text-xl">★</span> Recommended for You
-                </h3>
-                <p className="text-sm text-content-muted">Based on your profile and eligibility</p>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-lg font-medium text-gray-800">Application Summary</h2>
+              <Link to="/student/applications" className="text-sm text-primary-600 hover:text-primary-700">View All</Link>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-800">{stats.stats.applications.underReview}</div>
+                  <div className="text-sm text-gray-500">Under Review</div>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-600">{stats.stats.applications.shortlisted}</div>
+                  <div className="text-sm text-gray-500">Shortlisted</div>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">{stats.stats.applications.selected}</div>
+                  <div className="text-sm text-gray-500">Selected</div>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-red-600">{stats.stats.applications.rejected}</div>
+                  <div className="text-sm text-gray-500">Rejected</div>
+                </div>
               </div>
-              <Link to="/student/jobs" className="text-sm font-medium text-primary hover:text-primary-dark transition-colors flex items-center gap-1">
-                Browse all jobs <ArrowRight className="w-4 h-4" />
-              </Link>
             </div>
-
-            <div className="space-y-4">
-              {recommendedJobs.length === 0 ? (
-                <div className="text-sm text-content-muted text-center py-8">No opportunities currently available.</div>
-              ) : (
-                recommendedJobs.map(job => (
-                  <div key={job.id} className="p-4 border border-border-light rounded-xl flex gap-4 hover:border-primary/30 transition-colors">
-                    <div className="w-12 h-12 bg-base rounded-full flex items-center justify-center shrink-0 border border-border-light text-navy font-bold text-lg">
-                      {job.company?.name?.charAt(0) || 'C'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start mb-1">
-                        <h4 className="font-bold text-navy truncate pr-4">{job.title}</h4>
-                        <button 
-                          onClick={() => handleSaveJob(job.id, job.isSaved)}
-                          className="text-content-muted hover:text-primary transition-colors mt-0.5"
-                        >
-                          <Bookmark className={`w-5 h-5 ${job.isSaved ? 'fill-primary text-primary' : ''}`} />
-                        </button>
-                      </div>
-                      <div className="text-sm text-content-muted mb-3 flex items-center gap-2">
-                        <span>{job.company?.name}</span>
-                        <span className="w-1 h-1 rounded-full bg-border-light" />
-                        <span className="flex items-center gap-1 truncate"><MapPin className="w-3.5 h-3.5" /> {job.company?.location || 'India'}</span>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-100">
-                          {job.departments?.includes('CSE') ? 'Tech' : 'Core'}
-                        </span>
-                        <span className="px-2 py-0.5 bg-gray-50 text-content-muted rounded text-xs font-medium border border-border-light flex items-center gap-1">
-                          Min CGPA: {job.minCgpa || 'N/A'}
-                        </span>
-                        <span className="px-2 py-0.5 bg-gray-50 text-content-muted rounded text-xs font-medium border border-border-light">
-                          {job.graduationYears?.join(', ') || 'Any'} Batch
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between mt-4 border-t border-border-light pt-3">
-                        <div className="text-xs text-content-muted flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" />
-                          Deadline: {new Date(job.deadline).toLocaleDateString()}
-                        </div>
-                        <Link to={`/student/jobs/${job.id}`}>
-                          <Button variant="outline" size="sm" className="h-8 text-xs text-navy border-border-light">
-                            View Job &rarr;
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
+          </div>
           
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Link to="/student/jobs" className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-primary-300 transition-colors flex items-center gap-4">
+              <div className="p-4 bg-primary-50 text-primary-600 rounded-full">
+                <Briefcase size={24} />
+              </div>
               <div>
-                <h3 className="text-lg font-bold text-navy flex items-center gap-2">
-                  <User className="w-5 h-5 text-primary" /> Profile Readiness
-                </h3>
-                <p className="text-sm text-content-muted">Keep your profile up to date to get better job recommendations.</p>
+                <h3 className="font-medium text-gray-900">Discover Jobs</h3>
+                <p className="text-sm text-gray-500">Browse {stats.stats.approvedJobsCount} available opportunities</p>
               </div>
-              <Link to="/student/profile" className="text-sm font-medium text-primary hover:text-primary-dark transition-colors flex items-center gap-1">
-                Complete profile <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-            
-            <div className="flex flex-col gap-6">
+            </Link>
+            <Link to="/student/saved-jobs" className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-primary-300 transition-colors flex items-center gap-4">
+              <div className="p-4 bg-indigo-50 text-indigo-600 rounded-full">
+                <Bookmark size={24} />
+              </div>
               <div>
-                <div className="flex items-center justify-between text-sm font-bold text-navy mb-2">
-                  <span>Completion</span>
-                  <span>{profileProgress}%</span>
-                </div>
-                <div className="h-2 w-full bg-base rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary rounded-full transition-all duration-500"
-                    style={{ width: `${profileProgress}%` }}
-                  />
-                </div>
+                <h3 className="font-medium text-gray-900">Saved Jobs</h3>
+                <p className="text-sm text-gray-500">You have {stats.stats.savedJobsCount} saved jobs</p>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-xs font-bold text-navy uppercase tracking-wider mb-2">Completed</h4>
-                  {completedFields.length === 0 ? (
-                    <div className="text-sm text-content-muted">None</div>
-                  ) : (
-                    <ul className="space-y-1.5">
-                      {completedFields.map(field => (
-                        <li key={field.key} className="flex items-center gap-2 text-sm text-navy">
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          {field.label}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div>
-                  <h4 className="text-xs font-bold text-content-muted uppercase tracking-wider mb-2">Missing</h4>
-                  {missingFields.length === 0 ? (
-                    <div className="text-sm text-content-muted">None</div>
-                  ) : (
-                    <ul className="space-y-1.5">
-                      {missingFields.map(field => (
-                        <li key={field.key} className="flex items-center gap-2 text-sm text-content-muted">
-                          <div className="w-3.5 h-3.5 rounded-full border-2 border-border-light ml-0.5" />
-                          {field.label}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
+            </Link>
+          </div>
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Application Snapshot */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-navy flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-primary" /> Application Snapshot
-              </h3>
+        <div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-lg font-medium text-gray-800 flex items-center gap-2">
+                <Bell size={18} className="text-gray-500" /> Recent Notifications
+              </h2>
+              <Link to="/student/notifications" className="text-sm text-primary-600 hover:text-primary-700">All</Link>
             </div>
-            <p className="text-sm text-content-muted mb-6">Track the status of your applications</p>
-            
-            <div className="space-y-4">
-              {[
-                { label: 'Applied', count: appliedCount, color: 'bg-primary' },
-                { label: 'Under Review', count: applications.underReview, color: 'bg-blue-500' },
-                { label: 'Shortlisted', count: applications.shortlisted, color: 'bg-green-500' },
-                { label: 'Selected', count: applications.selected, color: 'bg-emerald-600' },
-                { label: 'Rejected', count: applications.rejected, color: 'bg-red-500' },
-              ].map(stat => (
-                <div key={stat.label} className="flex items-center gap-3">
-                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${stat.color}`} />
-                  <div className="w-28 text-sm text-navy">{stat.label}</div>
-                  <div className="flex-1 h-2 bg-base rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full ${stat.color}`} 
-                      style={{ width: applications.total > 0 ? `${(stat.count / applications.total) * 100}%` : '0%' }}
-                    />
-                  </div>
-                  <div className="w-8 text-right text-sm font-medium text-navy">{stat.count}</div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 text-right">
-              <Link to="/student/applications" className="text-sm font-medium text-primary hover:text-primary-dark transition-colors flex items-center justify-end gap-1">
-                View applications <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </Card>
-
-          {/* Latest Updates */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-navy flex items-center gap-2">
-                <Bell className="w-5 h-5 text-primary" /> Latest Updates
-              </h3>
-            </div>
-            <p className="text-sm text-content-muted mb-6">Recent activity and important updates</p>
-            
-            <div className="space-y-4">
-              {notifications.length === 0 ? (
-                <div className="text-sm text-content-muted py-4">No recent updates.</div>
+            <div className="p-0">
+              {stats.recentNotifications.length === 0 ? (
+                <div className="p-6 text-center text-gray-500 text-sm">No recent notifications</div>
               ) : (
-                notifications.slice(0, 3).map(notif => (
-                  <div key={notif.id} className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-base flex items-center justify-center shrink-0 border border-border-light text-primary">
-                      <Bell className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0 pb-4 border-b border-border-light last:border-0 last:pb-0">
-                      <div className="flex justify-between items-start mb-1">
-                        <h4 className="text-sm font-bold text-navy pr-2">{notif.title}</h4>
-                        {!notif.readAt && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />}
-                      </div>
-                      <p className="text-xs text-content-muted mb-2 line-clamp-2">{notif.message}</p>
-                      <div className="text-[11px] text-content-muted flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(notif.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                ))
+                <ul className="divide-y divide-gray-100">
+                  {stats.recentNotifications.map(notification => (
+                    <li key={notification.id} className={`p-4 ${!notification.readAt ? 'bg-blue-50' : 'bg-white'}`}>
+                      <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                      <p className="text-xs text-gray-500 mt-1">{notification.message}</p>
+                      <p className="text-xs text-gray-400 mt-2">{new Date(notification.createdAt).toLocaleDateString()}</p>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
-            <div className="mt-4 text-right">
-              <Link to="/student/notifications" className="text-sm font-medium text-primary hover:text-primary-dark transition-colors flex items-center justify-end gap-1">
-                View all notifications <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </Card>
+          </div>
         </div>
       </div>
-    </div>
+    </StudentLayout>
   );
-}
+};
+
+const StatCard = ({ title, value, icon: Icon, color }) => (
+  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex items-center">
+    <div className={`p-4 rounded-full ${color} mr-4`}>
+      <Icon size={24} />
+    </div>
+    <div>
+      <p className="text-sm font-medium text-gray-500">{title}</p>
+      <p className="text-2xl font-bold text-gray-900">{value}</p>
+    </div>
+  </div>
+);
+
+export default StudentDashboard;

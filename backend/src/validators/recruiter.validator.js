@@ -35,21 +35,3 @@ exports.applicationNotesSchema = z.object({
     notes: z.string().max(1000, 'Notes must be at most 1000 characters').nullable()
   })
 });
-
-exports.companySchema = z.object({
-  body: z.object({
-    name: z.string().min(2, 'Company name must be at least 2 characters'),
-    description: z.string().optional().nullable(),
-    website: z.string().url('Must be a valid URL').optional().nullable().or(z.literal('')),
-    industry: z.string().optional().nullable(),
-    location: z.string().optional().nullable()
-  })
-});
-
-exports.profileSchema = z.object({
-  body: z.object({
-    name: z.string().min(2, 'Name must be at least 2 characters'),
-    phone: z.string().optional().nullable().or(z.literal(''))
-  })
-});
-

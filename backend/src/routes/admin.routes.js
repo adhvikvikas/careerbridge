@@ -19,13 +19,11 @@ router.get('/dashboard-stats', adminController.getDashboardStats);
 
 // Companies
 router.get('/companies', adminController.getCompanies);
-router.get('/companies/:id', adminController.getCompanyById);
 router.patch('/companies/:id/approve', adminController.approveCompany);
 router.patch('/companies/:id/reject', validateRequest(rejectSchema), adminController.rejectCompany);
 
 // Jobs
 router.get('/jobs', adminController.getJobs);
-router.get('/jobs/:id', adminController.getJobById);
 router.patch('/jobs/:id/approve', adminController.approveJob);
 router.patch('/jobs/:id/reject', validateRequest(rejectSchema), adminController.rejectJob);
 

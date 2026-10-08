@@ -1,206 +1,171 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { api } from '../../services/api';
-import { Button } from '../../components/ui/Button';
-import { LoadingState, ErrorState } from '../../components/ui/States';
-import { 
-  Briefcase, 
-  MapPin, 
-  ArrowLeft, 
-  Bookmark, 
-  CheckCircle2, 
-  XCircle, 
-  Send, 
-  Calendar, 
-  GraduationCap, 
-  BookOpen, 
-  User, 
-  Globe
-} from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import StudentLayout from '../../components/StudentLayout';
+import api from '../../services/api';
+import { Building, MapPin, Calendar, Users, GraduationCap, FileText, CheckCircle, AlertCircle, Bookmark } from 'lucide-react';
 
-export default function StudentJobDetails() {
+const StudentJobDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const [applying, setApplying] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
-  
-  const [activeTab, setActiveTab] = useState('overview');
-
-  useEffect(() => {
-    fetchJobDetails();
-  }, [id]);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchJobDetails = async () => {
     try {
-      const response = await api(`/student/jobs/${id}`);
-      if (response.success) {
-        setData(response);
-      } else {
-        setError('Failed to load job details.');
-      }
+      const res = await api.get(`/student/jobs/${id}`);
+      setData(res.data);
     } catch (err) {
-      setError(err.message || 'Failed to load job details.');
+      setError(err.response?.data?.message || 'Failed to load job details');
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchJobDetails();
+    // eslint-disable-next-line
+  }, [id]);
+
   const handleApply = async () => {
-    setApplying(true);
-    setMessage(null);
+    if (!window.confirm('Are you sure you want to apply for this job?')) return;
+    
+    setActionLoading(true);
     try {
-      await api(`/student/jobs/${id}/apply`, { method: 'POST' });
-      setMessage({ type: 'success', text: 'Application submitted successfully!' });
-      await fetchJobDetails(); // Refresh to update hasApplied state
+      await api.post(`/student/jobs/${id}/apply`);
+      alert('Application submitted successfully!');
+      fetchJobDetails(); // Refresh
     } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Failed to submit application.' });
+      alert(err.response?.data?.message || 'Failed to apply');
     } finally {
-      setApplying(false);
+      setActionLoading(false);
     }
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    setMessage(null);
+  const toggleSave = async () => {
+    setActionLoading(true);
     try {
       if (data.isSaved) {
-        await api(`/student/jobs/${id}/save`, { method: 'DELETE' });
+        await api.delete(`/student/jobs/${id}/save`);
       } else {
-        await api(`/student/jobs/${id}/save`, { method: 'POST' });
+        await api.post(`/student/jobs/${id}/save`);
       }
-      // Optimistically update
-      setData(prev => ({ ...prev, isSaved: !prev.isSaved }));
+      fetchJobDetails();
     } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Failed to save job.' });
+      alert(err.response?.data?.message || 'Failed to update saved status');
     } finally {
-      setSaving(false);
+      setActionLoading(false);
     }
   };
 
-  if (loading) return <LoadingState message="Loading Opportunity Details..." />;
-  if (error) return <ErrorState message={error} />;
+  if (loading) return <StudentLayout title="Job Details"><div className="flex justify-center p-8"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div></StudentLayout>;
+  if (error) return <StudentLayout title="Job Details"><div className="bg-red-50 text-red-600 p-4 rounded-md">{error}</div></StudentLayout>;
+  if (!data) return <StudentLayout title="Job Details"><div className="text-gray-500">Not found</div></StudentLayout>;
 
   const { job, eligibility, isSaved, hasApplied, applicationStatus } = data;
 
   return (
-    <div className="space-y-6 pb-12 max-w-6xl mx-auto">
-      <Link to="/student/jobs" className="inline-flex items-center gap-2 text-sm font-medium text-content-muted hover:text-primary transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Back to Opportunities
-      </Link>
-
-      {message && (
-        <div className={`p-4 rounded-xl border text-sm font-medium flex items-center gap-3 ${
-          message.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'
-        }`}>
-          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
-          {message.text}
-        </div>
-      )}
-
-      {/* Hero Header */}
-      <div className="bg-surface border border-border-light rounded-2xl p-6 md:p-8 flex flex-col lg:flex-row justify-between lg:items-start gap-8 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="w-20 h-20 bg-base border border-border-light text-navy rounded-2xl flex items-center justify-center font-bold text-3xl shrink-0 shadow-sm">
-            {job.company?.name?.charAt(0) || 'C'}
-          </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-navy tracking-tight mb-2">{job.title}</h1>
-            <p className="text-lg font-medium text-content-muted mb-4">{job.company?.name}</p>
-
-            <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-semibold border border-blue-100 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5" /> {job.company?.location || 'Location Not Specified'}
-              </span>
-              {job.departments?.length > 0 && (
-                <span className="px-3 py-1 bg-gray-50 text-content-muted rounded-md text-xs font-semibold border border-border-light">
-                  {job.departments.join(', ')}
-                </span>
-              )}
-              {job.graduationYears?.length > 0 && (
-                <span className="px-3 py-1 bg-gray-50 text-content-muted rounded-md text-xs font-semibold border border-border-light">
-                  {job.graduationYears.join(', ')} Batch
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 w-full lg:w-64 shrink-0">
+    <StudentLayout title="Job Details">
+      <div className="flex justify-between items-center mb-6">
+        <button
+          onClick={() => navigate('/student/jobs')}
+          className="text-sm font-medium text-gray-600 hover:text-gray-900"
+        >
+          &larr; Back to Jobs
+        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={toggleSave}
+            disabled={actionLoading}
+            className={`inline-flex items-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+              isSaved 
+                ? 'border-indigo-600 text-indigo-600 bg-white hover:bg-indigo-50' 
+                : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+            }`}
+          >
+            <Bookmark className={`mr-2 h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
+            {isSaved ? 'Saved' : 'Save Job'}
+          </button>
+          
           {hasApplied ? (
-            <Button disabled variant="outline" className="w-full text-green-700 border-green-200 bg-green-50 opacity-100 font-bold" icon={<CheckCircle2 className="w-4 h-4" />}>
-              Applied
-            </Button>
+            <button
+              disabled
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 cursor-not-allowed"
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Applied ({applicationStatus})
+            </button>
           ) : (
-            <Button
+            <button
               onClick={handleApply}
-              loading={applying}
-              disabled={!eligibility.eligible}
-              variant="primary"
-              className="w-full h-12 text-base font-bold shadow-sm"
-              icon={<Send className="w-4 h-4" />}
+              disabled={!eligibility.eligible || actionLoading}
+              className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
+                eligibility.eligible 
+                  ? 'bg-primary-600 hover:bg-primary-700' 
+                  : 'bg-gray-400 cursor-not-allowed'
+              }`}
             >
               Apply Now
-            </Button>
+            </button>
           )}
-
-          <Button
-            variant="outline"
-            className={`w-full h-11 font-semibold ${isSaved ? 'text-primary border-primary bg-primary/5' : 'text-navy border-border-light'}`}
-            onClick={handleSave}
-            loading={saving}
-            icon={<Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />}
-          >
-            {isSaved ? 'Saved' : 'Save Job'}
-          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Column - Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          
-          <div className="bg-surface border border-border-light rounded-2xl shadow-sm overflow-hidden">
-            <div className="flex border-b border-border-light overflow-x-auto">
-              {['overview', 'about-company'].map(tab => (
-                <button
-                  key={tab}
-                  className={`px-6 py-4 text-sm font-semibold capitalize whitespace-nowrap transition-colors ${
-                    activeTab === tab 
-                      ? 'text-primary border-b-2 border-primary' 
-                      : 'text-content-muted hover:text-navy hover:bg-base'
-                  }`}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {tab.replace('-', ' ')}
-                </button>
-              ))}
-            </div>
-            
-            <div className="p-6 md:p-8">
-              {activeTab === 'overview' && (
-                <div className="prose prose-sm md:prose-base max-w-none text-content-muted whitespace-pre-wrap leading-relaxed">
-                  <h3 className="text-lg font-bold text-navy mb-4">Job Description & Requirements</h3>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-8">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{job.title}</h1>
+              <div className="flex items-center text-lg text-primary-700 font-medium mb-6">
+                <Building className="mr-2 h-5 w-5" />
+                {job.company.name}
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 border-y border-gray-100 py-6">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 flex items-center mb-1">
+                    <MapPin className="mr-1.5 h-4 w-4 text-gray-400" /> Location
+                  </p>
+                  <p className="text-sm text-gray-900 font-medium">{job.company.location || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 flex items-center mb-1">
+                    <Calendar className="mr-1.5 h-4 w-4 text-gray-400" /> Deadline
+                  </p>
+                  <p className="text-sm text-gray-900 font-medium">{new Date(job.deadline).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 flex items-center mb-1">
+                    <Users className="mr-1.5 h-4 w-4 text-gray-400" /> Openings
+                  </p>
+                  <p className="text-sm text-gray-900 font-medium">{job.openings || 'Not specified'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 flex items-center mb-1">
+                    <FileText className="mr-1.5 h-4 w-4 text-gray-400" /> Industry
+                  </p>
+                  <p className="text-sm text-gray-900 font-medium">{job.company.industry || 'N/A'}</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Job Description</h3>
+                <div className="prose prose-sm max-w-none text-gray-600 whitespace-pre-wrap">
                   {job.description}
                 </div>
-              )}
-              {activeTab === 'about-company' && (
-                <div className="prose prose-sm md:prose-base max-w-none text-content-muted whitespace-pre-wrap leading-relaxed">
-                  <h3 className="text-lg font-bold text-navy mb-4">About {job.company?.name}</h3>
-                  {job.company?.description ? (
-                    <p>{job.company.description}</p>
-                  ) : (
-                    <p>No description provided.</p>
-                  )}
-                  {job.company?.website && (
-                    <div className="mt-6">
-                      <a href={job.company.website} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-primary font-semibold hover:underline">
-                        <Globe className="w-4 h-4" /> Visit Website
-                      </a>
-                    </div>
+              </div>
+              
+              {job.company.description && (
+                <div className="mt-8 pt-8 border-t border-gray-100">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">About {job.company.name}</h3>
+                  <div className="text-sm text-gray-600 whitespace-pre-wrap">
+                    {job.company.description}
+                  </div>
+                  {job.company.website && (
+                    <a href={job.company.website} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-sm text-primary-600 hover:underline">
+                      Visit Website &rarr;
+                    </a>
                   )}
                 </div>
               )}
@@ -208,76 +173,86 @@ export default function StudentJobDetails() {
           </div>
         </div>
 
-        {/* Right Column - Meta Information */}
         <div className="space-y-6">
-          
-          {/* Important Information */}
-          <div className="bg-surface border border-border-light rounded-2xl p-6 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-navy mb-5">Important Information</h3>
-            <div className="space-y-5">
-              <div className="flex gap-4">
-                <Calendar className="w-5 h-5 text-content-muted shrink-0" />
-                <div>
-                  <div className="text-xs font-semibold text-content-muted mb-0.5">Application Deadline</div>
-                  <div className="text-sm font-medium text-navy">{new Date(job.deadline).toLocaleDateString()}</div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-base font-medium text-gray-900">Eligibility Status</h3>
+            </div>
+            <div className="p-6">
+              {eligibility.eligible ? (
+                <div className="flex items-start">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">You are eligible to apply</p>
+                    <p className="text-sm text-gray-500 mt-1">Your profile meets all the requirements for this position.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start">
+                  <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">You are not eligible</p>
+                    <ul className="mt-2 text-sm text-red-600 list-disc list-inside space-y-1">
+                      {eligibility.reasons.map((reason, idx) => (
+                        <li key={idx}>{reason}</li>
+                      ))}
+                    </ul>
+                    <div className="mt-4 text-xs text-gray-500">
+                      Update your <Link to="/student/profile" className="text-primary-600 hover:underline">profile</Link> if you believe this is incorrect.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-base font-medium text-gray-900">Requirements</h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Minimum CGPA</p>
+                <p className="text-sm text-gray-900 font-medium">{job.minCgpa ? `${job.minCgpa} and above` : 'No minimum requirement'}</p>
+              </div>
+              
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 flex items-center">
+                  <GraduationCap className="h-3.5 w-3.5 mr-1" /> Eligible Departments
+                </p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {job.departments && job.departments.length > 0 ? (
+                    job.departments.map(dept => (
+                      <span key={dept} className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700">
+                        {dept}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-900">Open to all branches</span>
+                  )}
                 </div>
               </div>
-              <div className="flex gap-4">
-                <MapPin className="w-5 h-5 text-content-muted shrink-0" />
-                <div>
-                  <div className="text-xs font-semibold text-content-muted mb-0.5">Work Location</div>
-                  <div className="text-sm font-medium text-navy">{job.company?.location || 'N/A'}</div>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <BookOpen className="w-5 h-5 text-content-muted shrink-0" />
-                <div>
-                  <div className="text-xs font-semibold text-content-muted mb-0.5">Eligible Branches</div>
-                  <div className="text-sm font-medium text-navy">{job.departments?.join(', ') || 'Any'}</div>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <User className="w-5 h-5 text-content-muted shrink-0" />
-                <div>
-                  <div className="text-xs font-semibold text-content-muted mb-0.5">Minimum CGPA</div>
-                  <div className="text-sm font-medium text-navy">{job.minCgpa || 'No minimum'}</div>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <GraduationCap className="w-5 h-5 text-content-muted shrink-0" />
-                <div>
-                  <div className="text-xs font-semibold text-content-muted mb-0.5">Batch</div>
-                  <div className="text-sm font-medium text-navy">{job.graduationYears?.join(', ') || 'Any'}</div>
+              
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Graduation Years</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {job.graduationYears && job.graduationYears.length > 0 ? (
+                    job.graduationYears.map(yr => (
+                      <span key={yr} className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                        {yr}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-900">Any year</span>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Eligibility Matrix */}
-          {!hasApplied && (
-            <div className={`border rounded-2xl p-5 shadow-sm ${eligibility.eligible ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}`}>
-              <h2 className="text-sm font-bold flex items-center gap-2 mb-3">
-                {eligibility.eligible ? (
-                  <><CheckCircle2 className="w-5 h-5 text-green-600" /> <span className="text-green-700">Eligible to Apply</span></>
-                ) : (
-                  <><XCircle className="w-5 h-5 text-red-600" /> <span className="text-red-700">Not Eligible</span></>
-                )}
-              </h2>
-              
-              {!eligibility.eligible && eligibility.reasons.length > 0 && (
-                <ul className="space-y-2 mt-3 pt-3 border-t border-red-200/50">
-                  {eligibility.reasons.map((reason, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                      <span className="text-sm font-medium text-red-700">{reason}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
         </div>
       </div>
-    </div>
+    </StudentLayout>
   );
-}
+};
+
+export default StudentJobDetails;
